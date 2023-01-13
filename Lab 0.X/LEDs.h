@@ -21,7 +21,13 @@
 //Libraries
 #include <xc.h>
 
-//Define LED ports
+//Define initiation of LED ports.
 #define LEDS_INIT() ({ TRISE = 0x00, LATE = 0x00;})
+
+//Define to set LEDs to specific value for future labs.
+#define LEDS_SET(newPattern) (LATE = newPattern)
+
+//Define to retrieve value of LED, but does not change them.
+#define LEDS_GET() LATE;
 
 #endif // LEDS_H

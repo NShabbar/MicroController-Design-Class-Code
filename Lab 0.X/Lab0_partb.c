@@ -23,20 +23,26 @@ void NOP() {
 }
 
 void main() {
-
+    BOARD_Init();
     LEDS_INIT();
     while (1) {
+        int NOP_counter = 0;
         LEDS = newPattern;
         newPattern++;
-        if (BTN1 || BTN2 || BTN3 || BTN4) {
-            newPattern = 0x00;
+        while (NOP_counter <= 50) {
+            if (BTN1 || BTN2 || BTN3 || BTN4) {
+                newPattern = 0x00;
+            }
+            if (newPattern >= 0xFF) {
+                newPattern = 0x00;
+            }
+            NOP();
+            NOP_counter++;
         }
-        if (newPattern >= 0xFF) {
-            newPattern = 0x00;
-        }
-        NOP();
     }
 }
+
+
 
 
 
