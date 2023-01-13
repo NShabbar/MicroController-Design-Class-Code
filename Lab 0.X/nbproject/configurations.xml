@@ -206,7 +206,7 @@
         <property key="stack-smashing" value=""/>
         <property key="wpo-lto" value="false"/>
       </C32Global>
-      <item path="Lab0_part2.c" ex="true" overriding="false">
+      <item path="Lab0_part1.c" ex="true" overriding="false">
       </item>
       <PICkit3PlatformTool>
         <property key="ADC 1" value="true"/>
