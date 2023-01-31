@@ -37,5 +37,5 @@ void WritetoCB(CBuffer CB, char data);
 
 // ReadtoCB()
 // writes to the circular buffer.
-void ReadtoCB(CBuffer CB);
+char ReadtoCB(CBuffer CB);
 #endif

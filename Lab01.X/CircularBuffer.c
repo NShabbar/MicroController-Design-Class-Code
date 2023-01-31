@@ -84,10 +84,10 @@ void WritetoCB(CBuffer CB, char data) {
 // ReadtoCB()
 // writes to the circular buffer.
 
-void ReadtoCB(CBuffer CB) {
+char ReadtoCB(CBuffer CB) {
     if (CB_isEmpty(CB)) {
         printf("\nBuffer is Empty.");
-        return -1;
+        return (-1);
     } else {
         char data = CB -> buffer[CB -> head];
         CB -> head = (CB -> head + 1) % BUFFER_SIZE;
