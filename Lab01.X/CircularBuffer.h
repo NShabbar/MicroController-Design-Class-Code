@@ -25,17 +25,17 @@ void freeCBuffer(CBuffer* pCB);
 
 // CB_isFull()
 // checks if the buffer is full.
-int CB_isFull(CBuffer *CB);
+int CB_isFull(CBuffer CB);
 
 // CB_isEmpty())
 // checks if the buffer is empty.
-int CB_isEmpty(CBuffer *CB);
+int CB_isEmpty(CBuffer CB);
 
 // WritetoCB()
 // writes to the circular buffer.
-void WritetoCB(CBuffer *CB, char data);
+void WritetoCB(CBuffer CB, char data);
 
 // ReadtoCB()
 // writes to the circular buffer.
-void ReadtoCB(CBuffer *CB);
+void ReadtoCB(CBuffer CB);
 #endif

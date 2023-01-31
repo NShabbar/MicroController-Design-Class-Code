@@ -47,7 +47,7 @@ CBuffer CBuffer_init() {
 
 void freeCBuffer(CBuffer *pCB) {
     if (pCB != NULL && (*pCB) != NULL) {
-        free((*pCB) -> buffer);
+        free(((*pCB) -> buffer));
         (*pCB) -> buffer = NULL;
         free(*pCB);
         (*pCB) = NULL;
@@ -57,21 +57,21 @@ void freeCBuffer(CBuffer *pCB) {
 // CB_isFull()
 // checks if the buffer is full.
 
-int CB_isFull(CBuffer *CB) {
+int CB_isFull(CBuffer CB) {
     return (CB -> head + 1) % BUFFER_SIZE == CB -> tail;
 }
 
 // CB_isEmpty())
 // checks if the buffer is empty.
 
-int CB_isEmpty(CBuffer *CB) {
+int CB_isEmpty(CBuffer CB) {
     return CB -> head == CB -> tail;
 }
 
 // WritetoCB()
 // writes to the circular buffer.
 
-void WritetoCB(CBuffer *CB, char data) {
+void WritetoCB(CBuffer CB, char data) {
     if (CB_isFull(CB)) {
         printf("\nBuffer is Full.");
         return;
@@ -84,7 +84,7 @@ void WritetoCB(CBuffer *CB, char data) {
 // ReadtoCB()
 // writes to the circular buffer.
 
-void ReadtoCB(CBuffer *CB) {
+void ReadtoCB(CBuffer CB) {
     if (CB_isEmpty(CB)) {
         printf("\nBuffer is Empty.");
         return -1;
