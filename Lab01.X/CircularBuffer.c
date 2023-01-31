@@ -87,10 +87,14 @@ void WritetoCB(CBuffer CB, char data) {
 char ReadtoCB(CBuffer CB) {
     if (CB_isEmpty(CB)) {
         printf("\nBuffer is Empty.");
-        return (-1);
+        return 0;
     } else {
         char data = CB -> buffer[CB -> head];
         CB -> head = (CB -> head + 1) % BUFFER_SIZE;
         return data;
     }
+}
+
+void main(){
+    return;
 }
