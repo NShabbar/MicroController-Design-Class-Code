@@ -15,8 +15,16 @@
 #include <math.h>
 #include <sys/attribs.h>
 
+//#define Test
 #define BUFFER_SIZE 512
+#define NOPS_FOR_5_MS 3125 //measured by the oscilloscope to make 5 ms.
 
+void NOP() {
+    int i;
+    for (i = 0; i < NOPS_FOR_5_MS; i++) {
+        asm("nop");
+    }
+}
 
 // structs --------------------------------------------------------------------
 
@@ -58,7 +66,7 @@ void freeCBuffer(CBuffer *pCB) {
 // checks if the buffer is full.
 
 int CB_isFull(CBuffer CB) {
-    return (CB -> head + 1) % BUFFER_SIZE == CB -> tail;
+    return (CB -> tail + 1) % BUFFER_SIZE == CB -> head;
 }
 
 // CB_isEmpty())
@@ -71,10 +79,9 @@ int CB_isEmpty(CBuffer CB) {
 // WritetoCB()
 // writes to the circular buffer.
 
-void WritetoCB(CBuffer CB, char data) {
+int WritetoCB(CBuffer CB, char data) {
     if (CB_isFull(CB)) {
-        printf("\nBuffer is Full.");
-        return;
+        return true;
     } else {
         CB -> buffer[CB -> tail] = data;
         CB -> tail = (CB -> tail + 1) % BUFFER_SIZE;
@@ -84,9 +91,8 @@ void WritetoCB(CBuffer CB, char data) {
 // ReadtoCB()
 // writes to the circular buffer.
 
-char ReadtoCB(CBuffer CB) {
+char ReadfromCB(CBuffer CB) {
     if (CB_isEmpty(CB)) {
-        printf("\nBuffer is Empty.");
         return 0;
     } else {
         char data = CB -> buffer[CB -> head];
@@ -95,6 +101,22 @@ char ReadtoCB(CBuffer CB) {
     }
 }
 
+// Testing circular buffer
+#ifdef Test
 void main(){
-    return;
+    BOARD_Init();
+    CBuffer CB = CBuffer_init();
+    bool empty = CB_isEmpty(CB);
+    assert(empty == true);
+    for (int i = 0; i <= BUFFER_SIZE + 1; i++){
+        WritetoCB(CB, 's');
+    }
+    bool full = CB_isFull(CB);
+    assert(full == true);
+    while (!CB_isEmpty(CB)){
+        char read = ReadfromCB(CB);
+        assert(read == 's');
+    }
+    NOP();
 }
+#endif

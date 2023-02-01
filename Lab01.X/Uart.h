@@ -38,6 +38,6 @@ int PutChar(char ch);
  * @return NULL for error or a Char in the argument.
  * @brief  dequeues a character from the RX buffer,
  * @author instructor, ECE121 W2022 */
-unsigned char GetChar(unsigned char *);
+unsigned char GetChar(void);
 
 #endif // UART_H
