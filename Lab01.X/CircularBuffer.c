@@ -79,7 +79,7 @@ int CB_isEmpty(CBuffer CB) {
 // WritetoCB()
 // writes to the circular buffer.
 
-int WritetoCB(CBuffer CB, char data) {
+int WritetoCB(CBuffer CB, unsigned char data) {
     if (CB_isFull(CB)) {
         return true;
     } else {
@@ -91,7 +91,7 @@ int WritetoCB(CBuffer CB, char data) {
 // ReadtoCB()
 // writes to the circular buffer.
 
-char ReadfromCB(CBuffer CB) {
+unsigned char ReadfromCB(CBuffer CB) {
     if (CB_isEmpty(CB)) {
         return 0;
     } else {

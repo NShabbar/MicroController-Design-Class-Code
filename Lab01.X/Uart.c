@@ -16,15 +16,9 @@
 //#define Part1
 #define Part2
 
-#define READING 1
-#define WRITING 2
-#define WAITING_READ 3
-#define WAITING_WRITE 4
-
 static CBuffer U1RX_buffer;
 static CBuffer U1TX_buffer;
 
-static int FLAG = 0;
 
 void Uart_Init(unsigned long baudRate) {
     U1RX_buffer = CBuffer_init();
@@ -37,7 +31,7 @@ void Uart_Init(unsigned long baudRate) {
 
     //Calculate Baude Rate
     unsigned int Fpb = BOARD_GetPBClock(); // May need to round with math.h round functions.
-    U1BRG = (Fpb/ (16*baudRate))-1; // PBCLK = 40 MHz.
+    U1BRG = (Fpb / (16 * baudRate)) - 1; // PBCLK = 40 MHz.
     // To calculate U1BRG given Baud Rate = 115200, use function:
     // UxBRG = (Fpb/(16*Baud Rate)) - 1, where Fpb is the frequency of the PBCLK.
     // PBCLK is the board's clock from the reference manual.
@@ -51,26 +45,32 @@ void Uart_Init(unsigned long baudRate) {
     // Enable
     U1STAbits.URXEN = 1; // Enables the receiver bit.
     U1STAbits.UTXEN = 1; // Enables the transmission bit.
+    U1STAbits.UTXISEL = 1; //interrupt when transmission is complete
+    U1STAbits.URXISEL = 0; //interrupt when RX is not empty (has at least 1 character)
     // UxSTA is used because it is the status and control register.
     // It controls the status of the other two registers.
-    
+
     // Enable Interrupts
     IEC0bits.U1RXIE = 1; // Enable interrupt
     IEC0bits.U1TXIE = 1; // Enable interrupt
-    
+    IFS0bits.U1TXIF = 0;
+    IFS0bits.U1RXIF = 0;
+
     // Interrupt Priorities
     IPC6bits.U1IP = 4; // Prio
     IPC6bits.U1IS = 3; // subprio
 }
+
 /**
-* Refer to ...\docs\MPLAB C32 Libraries.pdf: 32-Bit Language Tools Library.
-* In sec. 2.13.2 helper function _mon_putc() is noted as normally using
-* UART2 for STDOUT character data flow. Adding a custom version of your own
-* can redirect this to UART1 by calling your putchar() function.   
-*/
-void _mon_putc(char c){
+ * Refer to ...\docs\MPLAB C32 Libraries.pdf: 32-Bit Language Tools Library.
+ * In sec. 2.13.2 helper function _mon_putc() is noted as normally using
+ * UART2 for STDOUT character data flow. Adding a custom version of your own
+ * can redirect this to UART1 by calling your putchar() function.   
+ */
+void _mon_putc(char c) {
     PutChar(c);
 }
+
 /****************************************************************************
  * Function: IntUart1Handler
  * Parameters: None.
@@ -81,63 +81,39 @@ void _mon_putc(char c){
  * sys/attribs.h. 
  ****************************************************************************/
 void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
-    if (IFS0bits.U1RXIF){
+    if (IFS0bits.U1RXIF) {
         IFS0bits.U1RXIF = 0;
-        if (FLAG == 0){
-            char read_data = U1RXREG;
-            WritetoCB(U1RX_buffer, read_data);
-        }
-        if (FLAG == READING){
-            FLAG = WAITING_READ;
-            return;
-        }
-        if (FLAG == WRITING){
-            FLAG = WAITING_WRITE;
-            return;
-        }
+        while(U1STAbits.URXDA){
+           unsigned char read_data = U1RXREG;
+           WritetoCB(U1RX_buffer, read_data); 
+        }  
     }
-    if (IFS0bits.U1TXIF){
+    if (IFS0bits.U1TXIF) {
         IFS0bits.U1TXIF = 0;
-        if (FLAG == 0){
-            char write_data = ReadfromCB(U1TX_buffer);
+        while(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
+            unsigned char write_data = ReadfromCB(U1TX_buffer);
             U1TXREG = write_data;
         }
-        if (FLAG == READING){
-            FLAG = WAITING_READ;
-            return;
-        }
-        if (FLAG == WRITING){
-            FLAG = WAITING_WRITE;
-            return;
-        }
     }
 }
 
-int PutChar(char ch){
-    if (CB_isFull(U1TX_buffer) == true){
+int PutChar(char ch) {
+    if (CB_isFull(U1TX_buffer) == true) {
         return false;
     }
-    if (FLAG == WAITING_WRITE){
-        FLAG = 0;
+    if (!CB_isFull(U1TX_buffer)) {
+        IEC0bits.U1TXIE = 0;
+        WritetoCB(U1TX_buffer, ch);
+        IEC0bits.U1TXIE = 1;
+        //IFS0bits.U1TXIF = 1;
+    }
+    if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)) {
         IFS0bits.U1TXIF = 1;
     }
-    FLAG = WRITING;
-    WritetoCB(U1TX_buffer, ch);
-    FLAG = 0;
-    if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)){
-        IFS0bits.U1TXIF = 1;
-    }
-    return true;
 }
 
-unsigned char GetChar(void){
-    if (FLAG == WAITING_READ){
-        FLAG = 0;
-        IFS0bits.U1RXIF = 1;
-    }
-    FLAG = READING;
+unsigned char GetChar(void) {
     unsigned char data = ReadfromCB(U1RX_buffer);
-    FLAG = 0;
     return data;
 }
 
@@ -156,10 +132,17 @@ void main() {
 
 
 #ifdef Part2
-void main(){
+void main() {
     Uart_Init(115200);
     BOARD_Init();
-    printf("Hello World.");
-    while(1);
-}      
+    printf("Hello World\n");
+    printf("S");
+    
+    while(1){
+        unsigned char data = GetChar();
+        if (data != 0){
+            PutChar(data);
+        }
+    }
+}
 #endif

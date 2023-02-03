@@ -33,9 +33,9 @@ int CB_isEmpty(CBuffer CB);
 
 // WritetoCB()
 // writes to the circular buffer.
-int WritetoCB(CBuffer CB, char data);
+int WritetoCB(CBuffer CB, unsigned char data);
 
 // ReadtoCB()
 // writes to the circular buffer.
-char ReadfromCB(CBuffer CB);
+unsigned char ReadfromCB(CBuffer CB);
 #endif
