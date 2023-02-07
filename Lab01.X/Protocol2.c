@@ -1,26 +1,46 @@
 /* 
- * File:   Protocol2.h
- * Author: Nadia Shabbar
- * rewritten for Uart.c ECE121 W2023
+ * File:   Protocol2.c
+ * Author: Nadia
+ *
+ * Created on February 7, 2023, 11:50 AM
  */
-#ifndef PROTOCOL2_H
-#define PROTOCOL2_H
-/*******************************************************************************
- * PUBLIC #DEFINES                                                            *
- ******************************************************************************/
-#define PACKETBUFFERSIZE 16
-#define MAXPAYLOADLENGTH 128 
-#define DEBUG 0 
 
-/*******************************************************************************
- * PUBLIC DATATYPES
- ******************************************************************************/
-typedef int RXPElement;
-typedef struct rxpADT* rxp;
-/*******************************************************************************
- * PUBLIC FUNCTIONS                                                           *
- ******************************************************************************/
-/**
+#include "Uart.h"
+#include "BOARD.h"
+#include <xc.h>
+#include <math.h>
+#include <sys/attribs.h>
+#include "CircularBuffer.h"
+#include "Uart.h"
+#include "Protocol2.h"
+
+#define END \r\n
+
+typedef struct rxpADT {
+    uint8_t ID;      
+    uint8_t len;
+    uint8_t checkSum; 
+    unsigned char payLoad[MAXPAYLOADLENGTH];
+  }rxpADT; 
+
+  typedef struct rxpBuffObj {
+    int head; // location in circ buffer
+    int tail;
+    rxp *buffer;
+} rxpBuffObj;
+
+enum State{
+    STATE_START,
+    STATE_WAITING_LEN,
+    STATE_HEADER,
+    STATE_WAITING_ID,
+    STATE_ID,
+    STATE_WAITING_TAIL,
+    STATE_CHECKSUM,
+    STATE_WAITING_END,
+    STATE_END
+};
+  /**
  * @Function Protocol_Init(baudrate)
  * @param Legal Uart baudrate
  * @return SUCCESS (true) or ERROR (false)
@@ -75,6 +95,7 @@ unsigned char Protocol_ReadNextPacketID(void);
  * @brief flushes the rx packet circular buffer  
  * @author instructor W2022 */
 void flushPacketBuffer ();
+
 unsigned int convertEndian(unsigned int *);
 /*******************************************************************************
  * PRIVATE FUNCTIONS
@@ -99,7 +120,32 @@ unsigned int convertEndian(unsigned int *);
  * Now consider how to create another structure for use as a circular buffer
  * containing a PACKETBUFFERSIZE number of these rxpT packet structures.
  ******************************************************************************/
-uint8_t BuildRxPacket (rxp rxPacket, unsigned char reset);
+uint8_t BuildRxPacket (rxp rxPacket, unsigned char reset){
+    static State state = STATE_START;
+    while (state != STATE_END){
+        switch(state){
+            case STATE_START:
+                break;
+            case STATE_WAITING_LEN:
+                break;
+            case STATE_HEADER:
+                break;
+            case STATE_WAITING_ID:
+                break;
+            case STATE_ID:
+                break;
+            case STATE_WAITING_TAIL:
+                break;
+            case STATE_CHECKSUM:
+                break;
+            case STATE_WAITING_END:
+                break;
+            case STATE_END:
+                break;
+        }
+    }
+}
+
 /**
  * @Function char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned 
 char curChecksum)
@@ -112,25 +158,3 @@ new char
  * @author mdunne */
 unsigned char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned char 
 curChecksum);
-/**
- * This macro initializes all LEDs for use. It enables the proper pins as outputs 
-and also turns all
- * LEDs off.
- */
-#define LEDS_INIT() do {LATECLR = 0xFF; TRISECLR = 0xFF;} while (0)
-/**
- * Provides a way to quickly get the status of all 8 LEDs into a uint8, where a bit
-is 1 if the LED
- * is on and 0 if it's not. The LEDs are ordered such that bit 7 is LED8 and bit 0 
-is LED0.
- */
-#define LEDS_GET() (LATE & 0xFF)
-/**
- * This macro sets the LEDs on according to which bits are high in the argument. 
-Bit 0 corresponds
- * to LED0.
- * @param leds Set the LEDs to this value where 1 means on and 0 means off.
- */
-#define LEDS_SET(leds) do { LATE = (leds); } while (0)
-#endif /* PROTOCOL_H */
-

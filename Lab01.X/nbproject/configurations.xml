@@ -8,6 +8,7 @@
       <itemPath>BOARD.h</itemPath>
       <itemPath>Uart.h</itemPath>
       <itemPath>CircularBuffer.h</itemPath>
+      <itemPath>MessageIDs.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -19,6 +20,7 @@
       <itemPath>Uart.c</itemPath>
       <itemPath>BOARD.c</itemPath>
       <itemPath>CircularBuffer.c</itemPath>
+      <itemPath>Protocol2.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
