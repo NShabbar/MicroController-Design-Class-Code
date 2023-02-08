@@ -14,33 +14,40 @@
 #include "Uart.h"
 #include "Protocol2.h"
 
-#define END \r\n
 
-typedef struct rxpADT {
-    uint8_t ID;      
+
+typedef struct rxpT {
+    uint8_t ID;
     uint8_t len;
-    uint8_t checkSum; 
-    unsigned char payLoad[MAXPAYLOADLENGTH];
-  }rxpADT; 
+    uint8_t checkSum;
+    unsigned char *payLoad;
+} *rxpADT;
 
-  typedef struct rxpBuffObj {
+typedef struct rxpBuffObj {
     int head; // location in circ buffer
     int tail;
-    rxp *buffer;
+    rxpADT *buffer;
 } rxpBuffObj;
 
-enum State{
-    STATE_START,
-    STATE_WAITING_LEN,
-    STATE_HEADER,
-    STATE_WAITING_ID,
+typedef enum PacketState {
+    STATE_HEAD,
+    STATE_LEN,
     STATE_ID,
-    STATE_WAITING_TAIL,
+    STATE_PAYL,
+    STATE_TAIL,
     STATE_CHECKSUM,
-    STATE_WAITING_END,
-    STATE_END
-};
-  /**
+    STATE_END_R,
+    STATE_END_N
+} PacketState;
+
+static PacketState state;
+
+//Private Helper Functions
+uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte);
+unsigned char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned char
+        curChecksum);
+
+/**
  * @Function Protocol_Init(baudrate)
  * @param Legal Uart baudrate
  * @return SUCCESS (true) or ERROR (false)
@@ -57,7 +64,7 @@ int Protocol_Init(unsigned long baudrate);
  *        the RX circular buffer. The buffer's size is set by constant
  *        PACKETBUFFERSIZE.
  * @author instructor W2023 */
-uint8_t Protocol_QueuePacket ();
+uint8_t Protocol_QueuePacket();
 /**
  * @Function int Protocol_GetInPacket(uint8_t *type, uint8_t *len, uchar *msg)
  * @param *type, *len, *msg
@@ -94,7 +101,7 @@ unsigned char Protocol_ReadNextPacketID(void);
  * @return none
  * @brief flushes the rx packet circular buffer  
  * @author instructor W2022 */
-void flushPacketBuffer ();
+void flushPacketBuffer();
 
 unsigned int convertEndian(unsigned int *);
 /*******************************************************************************
@@ -103,6 +110,7 @@ unsigned int convertEndian(unsigned int *);
  * of the class some are are noted to help you organize the code internal 
  * to the module. 
  ******************************************************************************/
+
 /* BuildRxPacket() should implement a state machine to build an incoming
  * packet incrementally and return it completed in the called argument packet
  * structure (rxPacket is a pointer to a packet struct). The state machine should
@@ -120,31 +128,94 @@ unsigned int convertEndian(unsigned int *);
  * Now consider how to create another structure for use as a circular buffer
  * containing a PACKETBUFFERSIZE number of these rxpT packet structures.
  ******************************************************************************/
-uint8_t BuildRxPacket (rxp rxPacket, unsigned char reset){
-    static State state = STATE_START;
-    while (state != STATE_END){
-        switch(state){
-            case STATE_START:
+uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
+    switch (state) {
+        case STATE_HEAD:
+            if (byte == HEAD) {
+                rxPacket-> checkSum = 0;
+                for (int i = 0; i <= MAXPAYLOADLENGTH; i++) {
+                    rxPacket -> payLoad[i] = 0;
+                }
+                state = STATE_LEN;
                 break;
-            case STATE_WAITING_LEN:
+            } else {
+                state = STATE_HEAD; // fill in errors here.
                 break;
-            case STATE_HEADER:
+            }
+            break;
+        case STATE_LEN:
+            if (byte <= MAXPAYLOADLENGTH) {
+                rxPacket -> len = byte;
+                state = STATE_ID;
                 break;
-            case STATE_WAITING_ID:
+            } else {
+                state = STATE_HEAD;
                 break;
-            case STATE_ID:
+            }
+            break;
+        case STATE_ID:
+            if (byte) {
+                rxPacket -> ID = byte;
+                rxPacket -> checkSum = Protocol_CalcIterativeChecksum(rxPacket-> checkSum, byte);
+                state = STATE_PAYL;
                 break;
-            case STATE_WAITING_TAIL:
+            } else {
+                state = STATE_HEAD; // fill in errors here.
                 break;
-            case STATE_CHECKSUM:
+            }
+            break;
+        case STATE_PAYL:;
+            int count = 1;
+            if (byte == TAIL) {
+                state = STATE_HEAD; // call error here.
                 break;
-            case STATE_WAITING_END:
+            }
+            rxPacket -> checkSum = Protocol_CalcIterativeChecksum(rxPacket -> checkSum, byte);
+            rxPacket -> payLoad[count] = byte;
+            count++;
+            if (count == ((rxPacket -> len))) {
+                state = STATE_TAIL;
                 break;
-            case STATE_END:
+            }
+            break;
+        case STATE_TAIL:
+            if (byte == TAIL) {
+                state = STATE_CHECKSUM;
+            } else {
+                state = STATE_HEAD; // fill in errors here.
                 break;
-        }
+            }
+            break;
+        case STATE_CHECKSUM:
+            if (byte == rxPacket -> checkSum){
+                state = STATE_END_R;
+                break;
+            }else{
+                state = STATE_HEAD; // fill in errors here.
+                break;
+            }
+            break;
+        case STATE_END_R:
+            if (byte == '\r'){
+                state = STATE_END_N;
+                break;
+            }else{
+                state = STATE_HEAD; // fill in errors here.
+                break;
+            }
+            break;
+        case STATE_END_N:
+            if (byte == '\n'){
+                state = STATE_HEAD;
+                break;
+            }else{
+                state = STATE_HEAD; // fill in errors here.
+                break;
+            }
+            break;
     }
 }
+
 
 /**
  * @Function char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned 
@@ -156,5 +227,9 @@ function, can use 0 to reset
  * @brief Returns the BSD checksum of the char stream given the curChecksum and the
 new char
  * @author mdunne */
-unsigned char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned char 
-curChecksum);
+unsigned char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned char
+        curChecksum){
+    curChecksum = (curChecksum >> 1) + (curChecksum << 7);
+    curChecksum += charIn;
+    return curChecksum;
+}

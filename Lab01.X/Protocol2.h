@@ -12,11 +12,13 @@
 #define MAXPAYLOADLENGTH 128 
 #define DEBUG 0 
 
+#define HEAD 0xCC
+#define TAIL 0xB9
+
 /*******************************************************************************
  * PUBLIC DATATYPES
  ******************************************************************************/
-typedef int RXPElement;
-typedef struct rxpADT* rxp;
+
 /*******************************************************************************
  * PUBLIC FUNCTIONS                                                           *
  ******************************************************************************/
@@ -76,47 +78,7 @@ unsigned char Protocol_ReadNextPacketID(void);
  * @author instructor W2022 */
 void flushPacketBuffer ();
 unsigned int convertEndian(unsigned int *);
-/*******************************************************************************
- * PRIVATE FUNCTIONS
- * Generally these functions would not be exposed but due to the learning nature 
- * of the class some are are noted to help you organize the code internal 
- * to the module. 
- ******************************************************************************/
-/* BuildRxPacket() should implement a state machine to build an incoming
- * packet incrementally and return it completed in the called argument packet
- * structure (rxPacket is a pointer to a packet struct). The state machine should
- * progress through discrete states as each incoming byte is processed.
- * 
- * To help you get started, the following ADT is an example of a structure 
- * intended to contain a single rx packet. 
- * typedef struct rxpT {
- *    uint8_t ID;      
- *    uint8_t len;
- *    uint8_t checkSum; 
- *    unsigned char payLoad[MAXPAYLOADLENGTH];
- * }*rxpADT; 
- *   rxpADT rxPacket ...
- * Now consider how to create another structure for use as a circular buffer
- * containing a PACKETBUFFERSIZE number of these rxpT packet structures.
- ******************************************************************************/
-uint8_t BuildRxPacket (rxp rxPacket, unsigned char reset);
-/**
- * @Function char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned 
-char curChecksum)
- * @param charIn, new char to add to the checksum
- * @param curChecksum, current checksum, most likely the last return of this 
-function, can use 0 to reset
- * @return the new checksum value
- * @brief Returns the BSD checksum of the char stream given the curChecksum and the
-new char
- * @author mdunne */
-unsigned char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned char 
-curChecksum);
-/**
- * This macro initializes all LEDs for use. It enables the proper pins as outputs 
-and also turns all
- * LEDs off.
- */
+
 #define LEDS_INIT() do {LATECLR = 0xFF; TRISECLR = 0xFF;} while (0)
 /**
  * Provides a way to quickly get the status of all 8 LEDs into a uint8, where a bit
