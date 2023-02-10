@@ -22,7 +22,7 @@
  * @return none
  * @brief  Initializes UART1 to baudrate N81 and creates circ buffers
  * @author instructor ece121 W2022 */
-void Uart_Init(unsigned long baudRate);
+int Uart_Init(unsigned long baudRate);
 
 /**
  * @Function int PutChar(char ch)

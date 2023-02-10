@@ -62,7 +62,7 @@ int Protocol_SendDebugMessage(char *Message);
  * @return SUCCESS (true) or ERROR (false)
  * @brief composes and sends a full packet
  * @author instructor W2022 */
-int Protocol_SendPacket(unsigned char len, unsigned char ID, void *Payload);
+int Protocol_SendPacket(unsigned char len, unsigned char ID, unsigned char *Payload);
 /**
  @Function unsigned char Protocol_ReadNextID(void)
  * @param None
@@ -77,7 +77,9 @@ unsigned char Protocol_ReadNextPacketID(void);
  * @brief flushes the rx packet circular buffer  
  * @author instructor W2022 */
 void flushPacketBuffer ();
-unsigned int convertEndian(unsigned int *);
+unsigned int convertEndian(unsigned int* data);
+
+void Protocol_ParsePacket();
 
 #define LEDS_INIT() do {LATECLR = 0xFF; TRISECLR = 0xFF;} while (0)
 /**

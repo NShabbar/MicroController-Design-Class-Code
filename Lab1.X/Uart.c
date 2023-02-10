@@ -20,9 +20,12 @@ static CBuffer U1RX_buffer;
 static CBuffer U1TX_buffer;
 
 
-void Uart_Init(unsigned long baudRate) {
+int Uart_Init(unsigned long baudRate) {
     U1RX_buffer = CBuffer_init();
     U1TX_buffer = CBuffer_init();
+    if(U1RX_buffer == NULL || U1TX_buffer == NULL){
+        return 0;
+    }
     // Clear all Registers
     U1MODE = 0; // initialize Uart1 mode register to 0.
     U1STA = 0; // initialize Uart1 status and control register to 0.
@@ -59,6 +62,7 @@ void Uart_Init(unsigned long baudRate) {
     // Interrupt Priorities
     IPC6bits.U1IP = 4; // Prio
     IPC6bits.U1IS = 3; // subprio
+    return 1;
 }
 
 /**
