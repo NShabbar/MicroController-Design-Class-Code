@@ -94,6 +94,9 @@ uint8_t Protocol_QueuePacket() {
     if (RX_isEmpty(RX)) {
         return 0; // make an error for this to return
     }
+    if (RX_isFull(RX)){
+        return 1;
+    }
     if (rxPacket == NULL){
         rxPacket = newPacket();
     }
@@ -210,7 +213,7 @@ unsigned int convertEndian(unsigned int* data){
     return result;
 }
 
-void Protocol_ParsePacket();
+void Protocol_ParsePacket(); // deals with ping and pong. and removes packets from buffer.
 /*******************************************************************************
  * PRIVATE FUNCTIONS
  * Generally these functions would not be exposed but due to the learning nature 
@@ -424,4 +427,9 @@ rxpADT ReadfromRX(rxpBuffObj RX) {
         RX -> head = (RX -> head + 1) % PACKETBUFFERSIZE;
         return data;
     }
+}
+
+
+void main(){
+    return;
 }
