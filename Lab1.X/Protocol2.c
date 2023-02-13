@@ -11,6 +11,7 @@
 #include <math.h>
 #include<assert.h>
 #include <sys/attribs.h>
+#include <string.h>
 #include "CircularBuffer.h"
 #include "Uart.h"
 #include "MessageIDs.h"
@@ -123,7 +124,18 @@ uint8_t Protocol_QueuePacket() {
  * @return SUCCESS (true) or WAITING (false)
  * @brief Reads the next packet from the packet Buffer 
  * @author instructor W2022 */
-int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg);
+int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg){
+    if (RX_isEmpty(RX)) {
+        return 0; // make an error for this to return
+    }
+    rxpADT getpacket = ReadfromRX(RX);
+    *type = rxPacket -> ID;
+    *len = rxPacket -> len;
+    for (int i = 1; i <= *len; i++){
+        *msg = rxPacket -> payLoad[i];
+    }
+    return 1;
+}
 /**
  * @Function int Protocol_SendDebugMessage(char *Message)
  * @param Message, Proper C string to send out
@@ -131,7 +143,10 @@ int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg);
  * @brief Takes in a proper C-formatted string and sends it out using ID_DEBUG
  * @warning this takes an array, do <b>NOT</b> call sprintf as an argument.
  * @author mdunne */
-int Protocol_SendDebugMessage(char *Message);
+int Protocol_SendDebugMessage(char *Message){
+    unsigned char length = strlen(Message);
+    return Protocol_SendPacket(length, ID_DEBUG, (unsigned char *) Message);
+}
 
 /**
  * @Function int Protocol_SendPacket(unsigned char len, void *Payload)
@@ -178,6 +193,7 @@ int Protocol_SendPacket(unsigned char len, unsigned char ID, unsigned char *Payl
     if (data == false){
         return 0; // create an error to return here.
     }
+    return 1;
 }
 /**
  @Function unsigned char Protocol_ReadNextID(void)
@@ -213,7 +229,16 @@ unsigned int convertEndian(unsigned int* data){
     return result;
 }
 
-void Protocol_ParsePacket(); // deals with ping and pong. and removes packets from buffer.
+void Protocol_ParsePacket(){ // deals with ping and pong. and removes packets from buffer.
+    if (RX_isEmpty(RX)) {
+        return 0; // make an error for this to return
+    }
+    rxpADT parsepack = Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg);
+    if (parsepack -> ID == ID_PING){
+        unsigned int value = (convertEndian(parsepack -> payLoad) / 2);
+        Protocol_SendPacket(1, ID_PONG, value);
+    }
+} 
 /*******************************************************************************
  * PRIVATE FUNCTIONS
  * Generally these functions would not be exposed but due to the learning nature 
