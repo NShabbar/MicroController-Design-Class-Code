@@ -13,8 +13,7 @@
 #include <sys/attribs.h>
 #include "CircularBuffer.h"
 
-//#define Part1
-#define Part2
+
 
 static CBuffer U1RX_buffer;
 static CBuffer U1TX_buffer;

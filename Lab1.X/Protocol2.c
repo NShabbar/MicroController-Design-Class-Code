@@ -105,7 +105,7 @@ uint8_t Protocol_QueuePacket() {
         if (state = STATE_END_N) {
             if (rxPacket -> ID == ID_LEDS_GET) {
                 unsigned char payl = LEDS_GET();
-                Protocol_SendPacket(rxPacket -> len, ID_LEDS_STATE, &payl);
+                Protocol_SendPacket(2, ID_LEDS_STATE, &payl);
                 freeRXPacket(&rxPacket);
             }
             if (rxPacket -> ID == ID_LEDS_SET) {
@@ -429,7 +429,19 @@ rxpADT ReadfromRX(rxpBuffObj RX) {
     }
 }
 
-
+#ifdef Part3
 void main(){
-    return;
+    BOARD_Init();
+    Protocol_Init(115200);
+    LEDS_INIT();
+    
+    rxpADT TestPacket = newPacket();
+    unsigned char check = 0;
+    check = Protocol_CalcIterativeChecksum(0x81, check);
+    check = Protocol_CalcIterativeChecksum(0xFF, check);
+    assert(check == 0xBF);
+    asm("NOP");
+    
+    
 }
+#endif
