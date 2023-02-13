@@ -442,6 +442,10 @@ void main(){
     assert(check == 0xBF);
     asm("NOP");
     
-    
+    unsigned char buildpacket[] = {204, 2, 129, 0, 185, 192, 13, 10};
+    for (int i = 0; i < 7; i++){
+        BuildRxPacket(TestPacket, buildpacket[i]);
+    }
+    freeRXPacket(&TestPacket); 
 }
 #endif
