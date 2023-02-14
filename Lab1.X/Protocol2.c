@@ -61,6 +61,7 @@ int WritetoRX(rxpBuffObj RX, rxpADT data);
 rxpADT ReadfromRX(rxpBuffObj RX);
 void freeRXPacket(rxpADT *pRX);
 rxpADT newPacket();
+void Protocol_ParsePacket();
 /*******************************************************************************
  ******************************************************************************/
 
@@ -231,9 +232,12 @@ unsigned int convertEndian(unsigned int* data){
 
 void Protocol_ParsePacket(){ // deals with ping and pong. and removes packets from buffer.
     if (RX_isEmpty(RX)) {
-        return 0; // make an error for this to return
+        return; // make an error for this to return
     }
-    rxpADT parsepack = Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg);
+    uint8_t type;
+    uint8_t length;
+    unsigned char msg[MAXPAYLOADLENGTH];
+    rxpADT parsepack = Protocol_GetInPacket(*type, *length, *msg);
     if (parsepack -> ID == ID_PING){
         unsigned int value = (convertEndian(parsepack -> payLoad) / 2);
         Protocol_SendPacket(1, ID_PONG, value);
