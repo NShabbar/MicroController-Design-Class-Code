@@ -6,12 +6,12 @@
  * I/O stream abstraction between the physical and application layers.
  * All stream accesses are on a per-character or byte basis. 
  */
+
 #ifndef UART_H
 #define UART_H
 /*******************************************************************************
  * PUBLIC #DEFINES                                                             *
  ******************************************************************************/
-
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *
  ******************************************************************************/
@@ -39,5 +39,6 @@ int PutChar(char ch);
  * @brief  dequeues a character from the RX buffer,
  * @author instructor, ECE121 W2022 */
 unsigned char GetChar(void);
+//int GetChar(unsigned char* data);
 
 #endif // UART_H

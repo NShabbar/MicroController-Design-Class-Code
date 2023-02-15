@@ -18,7 +18,6 @@
 static CBuffer U1RX_buffer;
 static CBuffer U1TX_buffer;
 
-
 int Uart_Init(unsigned long baudRate) {
     U1RX_buffer = CBuffer_init();
     U1TX_buffer = CBuffer_init();
@@ -70,6 +69,7 @@ int Uart_Init(unsigned long baudRate) {
  * UART2 for STDOUT character data flow. Adding a custom version of your own
  * can redirect this to UART1 by calling your putchar() function.   
  */
+
 void _mon_putc(char c) {
     PutChar(c);
 }
@@ -86,9 +86,11 @@ void _mon_putc(char c) {
 void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
     if (IFS0bits.U1RXIF) {
         IFS0bits.U1RXIF = 0;
+        int tmp =0;
         while(U1STAbits.URXDA){
-           unsigned char read_data = U1RXREG;
-           WritetoCB(U1RX_buffer, read_data); 
+           //unsigned char read_data = ;
+           WritetoCB(U1RX_buffer, U1RXREG); 
+           tmp++;
         }  
     }
     if (IFS0bits.U1TXIF) {
@@ -116,9 +118,19 @@ int PutChar(char ch) {
 }
 
 unsigned char GetChar(void) {
+//    if (CB_isEmpty(U1RX_buffer)) {
+//        return 0;
+//    }
     unsigned char data = ReadfromCB(U1RX_buffer);
     return data;
 }
+//int GetChar(unsigned char* data) {
+//    if (CB_isEmpty(U1RX_buffer)) {
+//        return -1;
+//    }
+//    *data = ReadfromCB(U1RX_buffer);
+//    return data;
+//}
 
 #ifdef Part1
 
@@ -141,9 +153,14 @@ void main() {
     printf("Hello World\n");
     printf("S");
     
+//    unsigned char data;
     while(1){
+//        int checkdata = GetChar(&data);
+//        if (checkdata != -1){
+//            PutChar(data);
+//        }
         unsigned char data = GetChar();
-        if (data != 0){
+        if (data != -1){
             PutChar(data);
         }
     }

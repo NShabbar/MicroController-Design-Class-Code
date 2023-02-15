@@ -16,7 +16,7 @@
 #include <sys/attribs.h>
 
 //#define Test
-#define BUFFER_SIZE 512
+#define BUFFER_SIZE 16
 #define NOPS_FOR_5_MS 3125 //measured by the oscilloscope to make 5 ms.
 
 void NOP() {
