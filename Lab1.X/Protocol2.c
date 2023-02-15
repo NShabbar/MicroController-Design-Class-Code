@@ -72,11 +72,11 @@ void Protocol_ParsePacket();
  * @brief Initializes Uart1 for stream I/O to the lab PC via a USB 
  *        virtual comm port. Baudrate must be a legal value. 
  * @author instructor W2022 */
-int Protocol_Init(unsigned long baudrate){
+int Protocol_Init(unsigned long baudrate) {
     Uart_Init(baudrate);
     RX = RXBuffer_init();
     rxPacket = NULL;
-    if (RX == NULL){
+    if (RX == NULL) {
         return 0;
     }
     state = STATE_HEAD;
@@ -96,47 +96,40 @@ uint8_t Protocol_QueuePacket() {
     if (RX_isEmpty(RX)) {
         return 0; // make an error for this to return
     }
-    if (RX_isFull(RX)){
+    if (RX_isFull(RX)) {
         return 1;
     }
-    if (rxPacket == NULL){
+    if (rxPacket == NULL) {
         rxPacket = newPacket();
     }
     while (!RX_isEmpty(RX)) {
         BuildRxPacket(rxPacket, GetChar());
         if (state = STATE_END_N) {
-            if (rxPacket -> ID == ID_LEDS_GET) {
-                unsigned char payl = LEDS_GET();
-                Protocol_SendPacket(2, ID_LEDS_STATE, &payl);
-                freeRXPacket(&rxPacket);
-            }
-            if (rxPacket -> ID == ID_LEDS_SET) {
-                LEDS_SET(rxPacket -> payLoad[0]);
-                freeRXPacket(&rxPacket);
-            }
             WritetoRX(RX, rxPacket);
             rxPacket = NULL;
         }
     }
 }
+
 /**
  * @Function int Protocol_GetInPacket(uint8_t *type, uint8_t *len, uchar *msg)
  * @param *type, *len, *msg
  * @return SUCCESS (true) or WAITING (false)
  * @brief Reads the next packet from the packet Buffer 
  * @author instructor W2022 */
-int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg){
+int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg) {
     if (RX_isEmpty(RX)) {
         return 0; // make an error for this to return
     }
     rxpADT getpacket = ReadfromRX(RX);
     *type = rxPacket -> ID;
     *len = rxPacket -> len;
-    for (int i = 1; i <= *len; i++){
+    for (int i = 1; i <= *len; i++) {
         *msg = rxPacket -> payLoad[i];
     }
     return 1;
 }
+
 /**
  * @Function int Protocol_SendDebugMessage(char *Message)
  * @param Message, Proper C string to send out
@@ -144,7 +137,7 @@ int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg){
  * @brief Takes in a proper C-formatted string and sends it out using ID_DEBUG
  * @warning this takes an array, do <b>NOT</b> call sprintf as an argument.
  * @author mdunne */
-int Protocol_SendDebugMessage(char *Message){
+int Protocol_SendDebugMessage(char *Message) {
     unsigned char length = strlen(Message);
     return Protocol_SendPacket(length, ID_DEBUG, (unsigned char *) Message);
 }
@@ -157,92 +150,125 @@ int Protocol_SendDebugMessage(char *Message){
  * @brief composes and sends a full packet
  * @author instructor W2022 */
 int Protocol_SendPacket(unsigned char len, unsigned char ID, unsigned char *Payload) {
-    unsigned char data = PutChar(HEAD);
-    if (data == false){
+    PutChar(HEAD);
+    unsigned char data = HEAD;
+    if (data == false) {
         return 0; // create an error to return here.
     }
-    data = PutChar(len);
-    if (data == false){
+    PutChar(len);
+    data = len;
+    if (data == false) {
         return 0; // create an error to return here.
     }
-    data = PutChar(ID);
+    PutChar(ID);
+    data = ID;
     uint8_t checks = 0;
     checks = Protocol_CalcIterativeChecksum(checks, data);
-    if (data == false){
+    if (data == false) {
         return 0; // create an error to return here.
     }
     for (int i = 1; i <= len; i++) {
-        data = PutChar(Payload[i]);
+        PutChar(Payload[i]);
+        data = Payload[i];
         checks = Protocol_CalcIterativeChecksum(checks, data);
-        if (data == false){
+        if (data == false) {
             return 0; // create an error to return here.
         }
     }
-    data = PutChar(TAIL);
-    if (data == false){
+    PutChar(TAIL);
+    data = TAIL;
+    if (data == false) {
         return 0; // create an error to return here.
     }
-    data = PutChar(checks);
-    if (data == false){
+    PutChar(checks);
+    data = checks;
+    if (data == false) {
         return 0; // create an error to return here.
     }
-    data = PutChar('\r');
-    if (data == false){
+    PutChar('\r');
+    data = '\r';
+    if (data == false) {
         return 0; // create an error to return here.
     }
-    data = PutChar('\n');
-    if (data == false){
+    PutChar('\n');
+    data = '\n';
+    if (data == false) {
         return 0; // create an error to return here.
     }
     return 1;
 }
+
 /**
  @Function unsigned char Protocol_ReadNextID(void)
  * @param None
  * @return Reads the ID of the next available Packet
  * @brief Returns ID or 0 if no packets are available
  * @author instructor W2022 */
-unsigned char Protocol_ReadNextPacketID(void){
+unsigned char Protocol_ReadNextPacketID(void) {
     rxpADT packet = RX -> buffer[RX -> head];
-    if (packet == NULL){
+    if (packet == NULL) {
         return 0;
     }
     return packet -> ID;
 }
+
 /**
  * @Function flushPacketBuffer()
  * @param none
  * @return none
  * @brief flushes the rx packet circular buffer  
  * @author instructor W2022 */
-void flushPacketBuffer(){
-    for (int i = 0; i <= PACKETBUFFERSIZE; i++){
-         freeRXPacket(&(RX -> buffer[i]));
+void flushPacketBuffer() {
+    for (int i = 0; i <= PACKETBUFFERSIZE; i++) {
+        freeRXPacket(&(RX -> buffer[i]));
     }
     RX -> head = 0;
     RX -> tail = 0;
 }
 
-unsigned int convertEndian(unsigned int* data){
+unsigned int convertEndian(unsigned int* data) {
     unsigned int result;
     //result = byte0 | byte1 | byte2 | byte3;
     result = (((*data) << 24)&0x000000FF) | (((*data) << 8)&0x0000FF00) | (((*data) >> 8)&0x00FF0000) | (((*data) >> 24)&0xFF000000);
     return result;
 }
 
-void Protocol_ParsePacket(){ // deals with ping and pong. and removes packets from buffer.
+void Protocol_ParsePacket() { // deals with ping and pong. and removes packets from buffer.
     if (RX_isEmpty(RX)) {
         return; // make an error for this to return
     }
-    uint8_t type;
-    uint8_t length;
+    uint8_t type_for_parsepacket;
+    uint8_t length_for_parsepacket;
     unsigned char msg[MAXPAYLOADLENGTH];
-    rxpADT parsepack = Protocol_GetInPacket(*type, *length, *msg);
-    if (parsepack -> ID == ID_PING){
-        unsigned int value = (convertEndian(parsepack -> payLoad) / 2);
-        Protocol_SendPacket(1, ID_PONG, value);
+    Protocol_GetInPacket(&type_for_parsepacket, &length_for_parsepacket, msg);
+    int* number = malloc(sizeof (int));
+    unsigned char* bit_num = number;
+    for (int i = 1; i < length_for_parsepacket; i++) {
+        *bit_num = msg[i];
+        bit_num++;
     }
-} 
+    if (type_for_parsepacket == ID_PING) {
+        *number = (convertEndian(number) / 2);
+        *number = convertEndian(number);
+        unsigned char byte0 = *number & 0x000000FF;
+        unsigned char byte1 = (*number & 0x0000FF00) >> 8;
+        unsigned char byte2 = (*number & 0x00FF0000) >> 16;
+        unsigned char byte3 = (*number & 0xFF000000) >> 24;
+        unsigned char message[] = {byte0, byte1, byte2, byte3};
+        Protocol_SendPacket(5, ID_PONG, &message[0]);
+        //free(&message);
+    }
+    if (type_for_parsepacket == ID_LEDS_GET) {
+        unsigned char payl = LEDS_GET();
+        Protocol_SendPacket(2, ID_LEDS_STATE, &payl);
+        freeRXPacket(&rxPacket);
+    }
+    if (type_for_parsepacket == ID_LEDS_SET) {
+        LEDS_SET(rxPacket -> payLoad[0]);
+        freeRXPacket(&rxPacket);
+    }
+    // free(&number);
+}
 /*******************************************************************************
  * PRIVATE FUNCTIONS
  * Generally these functions would not be exposed but due to the learning nature 
@@ -459,22 +485,33 @@ rxpADT ReadfromRX(rxpBuffObj RX) {
 }
 
 #ifdef Part3
-void main(){
+
+void main() {
     BOARD_Init();
     Protocol_Init(115200);
     LEDS_INIT();
-    
+
     rxpADT TestPacket = newPacket();
     unsigned char check = 0;
     check = Protocol_CalcIterativeChecksum(0x81, check);
     check = Protocol_CalcIterativeChecksum(0xFF, check);
     assert(check == 0xBF);
-    asm("NOP");
-    
-    unsigned char buildpacket[] = {204, 2, 129, 255, 185, 191, 13, 10};
-    for (int i = 0; i < 7; i++){
-        BuildRxPacket(TestPacket, buildpacket[i]);
+    //asm("NOP");
+
+    //Set led
+    unsigned char buildpacket[] = {204, 5, 129, 255, 185, 191, 13, 10};
+
+    //
+
+    for (int i = 0; i < 7; i++) {
+        PutChar(buildpacket[i]);
+        //BuildRxPacket(TestPacket, buildpacket[i]);
     }
-    freeRXPacket(&TestPacket); 
+    freeRXPacket(&TestPacket);
+    //Protocol_SendPacket(0x02, 0x81, 0xFF);
+    while(1){
+        Protocol_QueuePacket();
+        Protocol_ParsePacket();  
+    }
 }
 #endif
