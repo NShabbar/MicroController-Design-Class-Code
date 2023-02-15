@@ -150,51 +150,23 @@ int Protocol_SendDebugMessage(char *Message) {
  * @brief composes and sends a full packet
  * @author instructor W2022 */
 int Protocol_SendPacket(unsigned char len, unsigned char ID, unsigned char *Payload) {
-    PutChar(HEAD);
-    unsigned char data = HEAD;
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
-    PutChar(len);
-    data = len;
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
-    PutChar(ID);
-    data = ID;
     uint8_t checks = 0;
-    checks = Protocol_CalcIterativeChecksum(checks, data);
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
-    for (int i = 1; i <= len; i++) {
+    PutChar(HEAD);
+//    unsigned char data = HEAD;
+    PutChar(len);
+    PutChar(ID);
+    checks = Protocol_CalcIterativeChecksum(checks, ID);
+//    checks = Protocol_CalcIterativeChecksum(checks, *Payload);
+//    PutChar(*Payload);
+    for (int i = 0; i < (len-1); i++) {
         PutChar(Payload[i]);
-        data = Payload[i];
-        checks = Protocol_CalcIterativeChecksum(checks, data);
-        if (data == false) {
-            return 0; // create an error to return here.
-        }
+        checks = Protocol_CalcIterativeChecksum(checks, Payload[i]);
     }
+//    int x = 0;
     PutChar(TAIL);
-    data = TAIL;
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
     PutChar(checks);
-    data = checks;
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
     PutChar('\r');
-    data = '\r';
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
     PutChar('\n');
-    data = '\n';
-    if (data == false) {
-        return 0; // create an error to return here.
-    }
     return 1;
 }
 
@@ -243,7 +215,7 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
     Protocol_GetInPacket(&type_for_parsepacket, &length_for_parsepacket, msg);
     int* number = malloc(sizeof (int));
     unsigned char* bit_num = number;
-    for (int i = 1; i < length_for_parsepacket; i++) {
+    for (int i = 0; i < length_for_parsepacket; i++) {
         *bit_num = msg[i];
         bit_num++;
     }
@@ -256,7 +228,6 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
         unsigned char byte3 = (*number & 0xFF000000) >> 24;
         unsigned char message[] = {byte0, byte1, byte2, byte3};
         Protocol_SendPacket(5, ID_PONG, &message[0]);
-        //free(&message);
     }
     if (type_for_parsepacket == ID_LEDS_GET) {
         unsigned char payl = LEDS_GET();
@@ -267,7 +238,7 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
         LEDS_SET(rxPacket -> payLoad[0]);
         freeRXPacket(&rxPacket);
     }
-    // free(&number);
+    free(number);
 }
 /*******************************************************************************
  * PRIVATE FUNCTIONS
@@ -503,12 +474,15 @@ void main() {
 
     //
 
-    for (int i = 0; i < 7; i++) {
-        PutChar(buildpacket[i]);
+    //for (int i = 0; i < 7; i++) {
+        //PutChar(buildpacket[i]);
         //BuildRxPacket(TestPacket, buildpacket[i]);
-    }
+    //}
     freeRXPacket(&TestPacket);
-    //Protocol_SendPacket(0x02, 0x81, 0xFF);
+    unsigned char length = 0x02;
+    unsigned char ids = 0x81;
+    unsigned char lights = 0xFF;
+    Protocol_SendPacket(length, ids, &lights);
     while(1){
         Protocol_QueuePacket();
         Protocol_ParsePacket();  
