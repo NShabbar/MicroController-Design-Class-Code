@@ -12,7 +12,7 @@
 #include "BOARD.h"
 
 // Exported types -------------------------------------------------------------
-typedef int CBElement;
+//typedef int CBElement;
 typedef struct CircBuffObj* CBuffer;
 
 //CBuffer_init()

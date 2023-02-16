@@ -94,16 +94,17 @@ int Protocol_Init(unsigned long baudrate) {
  *        PACKETBUFFERSIZE.
  * @author instructor W2023 */
 uint8_t Protocol_QueuePacket() {
-    if (u1rx_isEmpty()){
-        return false;
-    }
+//    if (u1rx_isEmpty()){
+//        return false;
+//    }
     if (RX_isFull(RX)) {
         return 1;
     }
     if (rxPacket == NULL) {
         rxPacket = newPacket();
     }
-    unsigned char c =GetChar();
+    unsigned char *data = U1RXREG;
+    unsigned char c = GetChar(data);
     BuildRxPacket(rxPacket, c);
     if (flag == 1) {
         flag = 0;
@@ -282,10 +283,8 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                     rxPacket -> payLoad[i] = 0;
                 }
                 state = STATE_LEN;
-                break;
             } else {
                 state = STATE_HEAD; // fill in errors here.
-                break;
             }
             break;
         case STATE_LEN:
@@ -293,10 +292,8 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 rxPacket -> len = byte;
                 state = STATE_ID;
                 int x = 0;
-                break;
             } else {
                 state = STATE_HEAD;
-                break;
             }
             break;
         case STATE_ID:
@@ -322,7 +319,6 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
             if (count == ((rxPacket -> len))) {
                 state = STATE_TAIL;
                 int x = 0;
-                break;
             }
             break;
         case STATE_TAIL:
@@ -331,27 +327,22 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 int x = 0;
             } else {
                 state = STATE_HEAD; // fill in errors here.
-                break;
             }
             break;
         case STATE_CHECKSUM:
             if (byte == rxPacket -> checkSum) {
                 int x = 0;
                 state = STATE_END_R;
-                break;
             } else {
                 state = STATE_HEAD; // fill in errors here.
-                break;
             }
             break;
         case STATE_END_R:
             if (byte == '\r') {
                 int x = 0;
                 state = STATE_END_N;
-                break;
             } else {
                 state = STATE_HEAD; // fill in errors here.
-                break;
             }
             break;
         case STATE_END_N:
@@ -359,10 +350,8 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 int x = 0;
                 state = STATE_HEAD;
                 flag = 1;
-                break;
             } else {
                 state = STATE_HEAD; // fill in errors here.
-                break;
             }
             break;
     }

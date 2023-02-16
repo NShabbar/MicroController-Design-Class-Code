@@ -15,7 +15,7 @@
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *
  ******************************************************************************/
-unsigned char u1rx_isEmpty(void);
+//unsigned char u1rx_isEmpty(void);
 /**
  * @Function Uart_Init(unsigned long baudrate)
  * @param baudrate
@@ -30,7 +30,7 @@ int Uart_Init(unsigned long baudRate);
  * @return True if successful, else False if the buffer is full or busy.
  * @brief  adds char to the end of the TX circular buffer
  * @author instrutor ECE121 W2022 */
-int PutChar(char ch);
+int PutChar(unsigned char *ch);
 
 /**
  * @Function unsigned char GetChar(void)
@@ -38,7 +38,7 @@ int PutChar(char ch);
  * @return NULL for error or a Char in the argument.
  * @brief  dequeues a character from the RX buffer,
  * @author instructor, ECE121 W2022 */
-unsigned char GetChar(void);
+int GetChar(unsigned char* data);
 //int GetChar(unsigned char* data);
 
 #endif // UART_H

@@ -93,6 +93,7 @@ int WritetoCB(CBuffer CB, unsigned char data) {
     } else {
         CB -> buffer[CB -> tail] = data;
         CB -> tail = (CB -> tail + 1) % BUFFER_SIZE;
+        return true;
     }
 }
 
