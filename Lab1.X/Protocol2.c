@@ -94,9 +94,9 @@ int Protocol_Init(unsigned long baudrate) {
  *        PACKETBUFFERSIZE.
  * @author instructor W2023 */
 uint8_t Protocol_QueuePacket() {
-//    if (!GetChar) {
-//        return 0; // make an error for this to return
-//    }
+    if (u1rx_isEmpty()){
+        return false;
+    }
     if (RX_isFull(RX)) {
         return 1;
     }
@@ -238,15 +238,13 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
         unsigned char message[] = {byte0, byte1, byte2, byte3};
         Protocol_SendPacket(5, ID_PONG, &message[0]);
     }
-//    if (type_for_parsepacket == ID_LEDS_GET) {
-//        unsigned char payl = LEDS_GET();
-//        Protocol_SendPacket(2, ID_LEDS_STATE, &payl);
-//        freeRXPacket(&rxPacket);
-//    }
-//    if (type_for_parsepacket == ID_LEDS_SET) {
-//        LEDS_SET(rxPacket -> payLoad[0]);
-//        freeRXPacket(&rxPacket);
-//    }
+    if (type_for_parsepacket == ID_LEDS_GET) {
+        unsigned char payl = LEDS_GET();
+        Protocol_SendPacket(2, ID_LEDS_STATE, &payl);
+    }
+    if (type_for_parsepacket == ID_LEDS_SET) {
+        LEDS_SET(msg[0]);
+    }
     free(number);
 }
 /*******************************************************************************
@@ -269,7 +267,7 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
  *    uint8_t checkSum; 
  *    unsigned char payLoad[MAXPAYLOADLENGTH];
  * }*rxpADT; 
- *   rxpADT rxPacket ...
+ *   rxpADT rxPacket ..a.
  * Now consider how to create another structure for use as a circular buffer
  * containing a PACKETBUFFERSIZE number of these rxpT packet structures.
  ******************************************************************************/
@@ -506,7 +504,7 @@ void main() {
     int x = 0;
     while(1){
         Protocol_QueuePacket();
-//        Protocol_ParsePacket();  
+        Protocol_ParsePacket();  
     }
     freeRXPacket(&TestPacket);
 }

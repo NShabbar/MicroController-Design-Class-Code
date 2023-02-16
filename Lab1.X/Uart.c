@@ -46,7 +46,7 @@ int Uart_Init(unsigned long baudRate) {
     // Enable
     U1STAbits.URXEN = 1; // Enables the receiver bit.
     U1STAbits.UTXEN = 1; // Enables the transmission bit.
-    U1STAbits.UTXISEL = 1; //interrupt when transmission is complete
+    U1STAbits.UTXISEL = 2; //interrupt when transmission is complete // look up 2 and 1 in data sheet.
     U1STAbits.URXISEL = 0; //interrupt when RX is not empty (has at least 1 character)
     // UxSTA is used because it is the status and control register.
     // It controls the status of the other two registers.
@@ -74,6 +74,9 @@ void _mon_putc(char c) {
     PutChar(c);
 }
 
+unsigned char u1rx_isEmpty(void){
+    return CB_isEmpty(U1RX_buffer);
+}
 /****************************************************************************
  * Function: IntUart1Handler
  * Parameters: None.
@@ -87,20 +90,20 @@ void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
     int tmp = 0;
     if (IFS0bits.U1RXIF) {
         IFS0bits.U1RXIF = 0;
-        if(U1STAbits.URXDA){
-            WritetoCB(U1RX_buffer, U1RXREG);
-            tmp++;
-        }
+//        if(U1STAbits.URXDA){
+//            WritetoCB(U1RX_buffer, U1RXREG);
+//            tmp++;
+//        }
          
-//        while(U1STAbits.URXDA){
-           //unsigned char read_data = ;
-//           WritetoCB(U1RX_buffer, U1RXREG); 
-//           tmp++;
-//        }  
+        while(U1STAbits.URXDA){
+//           unsigned char read_data = ;
+           WritetoCB(U1RX_buffer, U1RXREG); 
+           tmp++;
+        }  
     }
     if (IFS0bits.U1TXIF) {
         IFS0bits.U1TXIF = 0;
-        if(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
+        while(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
             unsigned char write_data = ReadfromCB(U1TX_buffer);
             U1TXREG = write_data;
         }
@@ -115,7 +118,7 @@ int PutChar(char ch) {
         IEC0bits.U1TXIE = 0;
         WritetoCB(U1TX_buffer, ch);
         IEC0bits.U1TXIE = 1;
-        IFS0bits.U1TXIF = 1;
+        //IFS0bits.U1TXIF = 1;
     }
     if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)) {
         IFS0bits.U1TXIF = 1;
@@ -123,9 +126,9 @@ int PutChar(char ch) {
 }
 
 unsigned char GetChar(void) {
-//    if (CB_isEmpty(U1RX_buffer)) {
-//        return 0;
-//    }
+    if (CB_isEmpty(U1RX_buffer)) {
+        return 0;
+    }
     unsigned char data = ReadfromCB(U1RX_buffer);
     return data;
 }

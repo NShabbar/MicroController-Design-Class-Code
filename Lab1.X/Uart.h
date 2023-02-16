@@ -15,7 +15,7 @@
 /*******************************************************************************
  * PUBLIC FUNCTION PROTOTYPES                                                  *
  ******************************************************************************/
-
+unsigned char u1rx_isEmpty(void);
 /**
  * @Function Uart_Init(unsigned long baudrate)
  * @param baudrate
