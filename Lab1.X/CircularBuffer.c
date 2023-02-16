@@ -16,7 +16,7 @@
 #include <sys/attribs.h>
 
 //#define Test
-#define BUFFER_SIZE 16
+#define BUFFER_SIZE 512
 #define NOPS_FOR_5_MS 3125 //measured by the oscilloscope to make 5 ms.
 
 void NOP() {
@@ -66,22 +66,30 @@ void freeCBuffer(CBuffer *pCB) {
 // checks if the buffer is full.
 
 int CB_isFull(CBuffer CB) {
-    return (CB -> tail + 1) % BUFFER_SIZE == CB -> head;
+    if((CB -> tail + 1) % BUFFER_SIZE == CB -> head){
+        return true;
+    }
+    return false;
+//    return (CB -> tail + 1) % BUFFER_SIZE == CB -> head;
 }
 
 // CB_isEmpty())
 // checks if the buffer is empty.
 
 int CB_isEmpty(CBuffer CB) {
-    return CB -> head == CB -> tail;
+    if(CB -> head == CB -> tail){
+        return true;
+    }
+    return false;
+//    return CB -> head == CB -> tail;
 }
 
 // WritetoCB()
 // writes to the circular buffer.
 
 int WritetoCB(CBuffer CB, unsigned char data) {
-    if (CB_isFull(CB)) {
-        return true;
+    if (CB_isFull(CB) == true) {
+        return false;
     } else {
         CB -> buffer[CB -> tail] = data;
         CB -> tail = (CB -> tail + 1) % BUFFER_SIZE;
@@ -92,8 +100,8 @@ int WritetoCB(CBuffer CB, unsigned char data) {
 // writes to the circular buffer.
 
 unsigned char ReadfromCB(CBuffer CB) {
-    if (CB_isEmpty(CB)) {
-        return 0;
+    if (CB_isEmpty(CB) == true) {
+        return false;
     } else {
         char data = CB -> buffer[CB -> head];
         CB -> head = (CB -> head + 1) % BUFFER_SIZE;

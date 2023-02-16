@@ -84,18 +84,23 @@ void _mon_putc(char c) {
  * sys/attribs.h. 
  ****************************************************************************/
 void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
+    int tmp = 0;
     if (IFS0bits.U1RXIF) {
         IFS0bits.U1RXIF = 0;
-        int tmp =0;
-        while(U1STAbits.URXDA){
+        if(U1STAbits.URXDA){
+            WritetoCB(U1RX_buffer, U1RXREG);
+            tmp++;
+        }
+         
+//        while(U1STAbits.URXDA){
            //unsigned char read_data = ;
-           WritetoCB(U1RX_buffer, U1RXREG); 
-           tmp++;
-        }  
+//           WritetoCB(U1RX_buffer, U1RXREG); 
+//           tmp++;
+//        }  
     }
     if (IFS0bits.U1TXIF) {
         IFS0bits.U1TXIF = 0;
-        while(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
+        if(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
             unsigned char write_data = ReadfromCB(U1TX_buffer);
             U1TXREG = write_data;
         }
@@ -110,7 +115,7 @@ int PutChar(char ch) {
         IEC0bits.U1TXIE = 0;
         WritetoCB(U1TX_buffer, ch);
         IEC0bits.U1TXIE = 1;
-        //IFS0bits.U1TXIF = 1;
+        IFS0bits.U1TXIF = 1;
     }
     if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)) {
         IFS0bits.U1TXIF = 1;
@@ -151,16 +156,10 @@ void main() {
     Uart_Init(115200);
     BOARD_Init();
     printf("Hello World\n");
-    printf("S");
     
-//    unsigned char data;
     while(1){
-//        int checkdata = GetChar(&data);
-//        if (checkdata != -1){
-//            PutChar(data);
-//        }
         unsigned char data = GetChar();
-        if (data != -1){
+        if (data != 0){
             PutChar(data);
         }
     }

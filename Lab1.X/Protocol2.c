@@ -506,7 +506,7 @@ void main() {
     int x = 0;
     while(1){
         Protocol_QueuePacket();
-        Protocol_ParsePacket();  
+//        Protocol_ParsePacket();  
     }
     freeRXPacket(&TestPacket);
 }
