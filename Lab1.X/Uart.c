@@ -89,18 +89,19 @@ unsigned char u1rx_isEmpty(void){
  * sys/attribs.h. 
  ****************************************************************************/
 void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
-    int tmp = 0;
+//    int tmp = 0;
     if (IFS0bits.U1RXIF) {
         IFS0bits.U1RXIF = 0;
-        WritetoCB(U1RX_buffer, U1RXREG);
+        unsigned char read_data = U1RXREG;
+        WritetoCB(U1RX_buffer, read_data);
 //        tmp++;
 //        if(U1STAbits.URXDA){
-//            WritetoCB(U1RX_buffer, U1RXREG);
+//            WritetoCB(U1RX_buffer, read_data);
 //            tmp++;
 //        }
          
 //        while(U1STAbits.URXDA){
-//           WritetoCB(U1RX_buffer, U1RXREG); 
+//           WritetoCB(U1RX_buffer, read_data); 
 //           tmp++;
 //        }  
     }
@@ -117,9 +118,9 @@ int PutChar(char ch) {
     if (CB_isFull(U1TX_buffer) == true) {
         return false;
     }
-//    IEC0bits.U1TXIE = 0;
+    IEC0bits.U1TXIE = 0;
     WritetoCB(U1TX_buffer, ch);
-//    IEC0bits.U1TXIE = 1;
+    IEC0bits.U1TXIE = 1;
     IFS0bits.U1TXIF = 1;
     
 //    if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)) {
@@ -135,11 +136,11 @@ unsigned char GetChar(void) {
 //    IEC0bits.U1RXIE = 0;
 //    unsigned char data = ReadfromCB(U1RX_buffer);
 //    IEC0bits.U1RXIE = 1;
-//    return data;
-    //IEC0bits.U1RXIE = 0;
+//    return data; 
     if(CB_isEmpty(U1RX_buffer) == false){
+        IEC0bits.U1RXIE = 0;
         unsigned char data = ReadfromCB(U1RX_buffer);
-//    IEC0bits.U1RXIE = 1;
+        IEC0bits.U1RXIE = 1;
         IFS0bits.U1RXIF = 1;
         return data;
     }
