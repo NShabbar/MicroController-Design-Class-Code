@@ -16,6 +16,10 @@
 #define WAITING_RX 1
 #define WAITING_TX 2
 
+static int RX_Modifying;
+static int RX_Collision;
+static int TX_Modifying;
+static int TX_Collision;
 
 static CBuffer U1RX_buffer;
 static CBuffer U1TX_buffer;
@@ -26,6 +30,10 @@ int Uart_Init(unsigned long baudRate) {
     if(U1RX_buffer == NULL || U1TX_buffer == NULL){
         return 0;
     }
+    RX_Modifying = 0;
+    RX_Collision = 0;
+    TX_Modifying = 0;
+    TX_Collision = 0;
     // Clear all Registers
     U1MODE = 0; // initialize Uart1 mode register to 0.
     U1STA = 0; // initialize Uart1 status and control register to 0.
@@ -89,28 +97,26 @@ unsigned char u1rx_isEmpty(void){
  * sys/attribs.h. 
  ****************************************************************************/
 void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
-//    int tmp = 0;
-    if (IFS0bits.U1RXIF) {
+    if (IFS0bits.U1RXIF && !RX_Modifying) {
         IFS0bits.U1RXIF = 0;
         unsigned char read_data = U1RXREG;
         WritetoCB(U1RX_buffer, read_data);
-//        tmp++;
-//        if(U1STAbits.URXDA){
-//            WritetoCB(U1RX_buffer, read_data);
-//            tmp++;
-//        }
-         
-//        while(U1STAbits.URXDA){
-//           WritetoCB(U1RX_buffer, read_data); 
-//           tmp++;
-//        }  
     }
-    if (IFS0bits.U1TXIF) {
+    if (IFS0bits.U1RXIF && RX_Modifying){
+        RX_Collision = 1;
+        IFS0bits.U1RXIF = 0; 
+    }
+    
+    if (IFS0bits.U1TXIF && !TX_Modifying) {
         IFS0bits.U1TXIF = 0;
         if(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
             unsigned char write_data = ReadfromCB(U1TX_buffer);
             U1TXREG = write_data;   
         }
+    }
+    if (IFS0bits.U1TXIF && TX_Modifying){
+        TX_Collision = 1;
+        IFS0bits.U1TXIF = 0; 
     }
 }
 
@@ -118,30 +124,33 @@ int PutChar(char ch) {
     if (CB_isFull(U1TX_buffer) == true) {
         return false;
     }
-    IEC0bits.U1TXIE = 0;
-    WritetoCB(U1TX_buffer, ch);
-    IEC0bits.U1TXIE = 1;
-    IFS0bits.U1TXIF = 1;
-    
-//    if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)) {
-//        IFS0bits.U1TXIF = 1;
-//    }
+    if (TX_Collision == 1){
+        TX_Collision == 0;
+        IFS0bits.U1TXIF = 1;
+    }
+    if (CB_isFull(U1TX_buffer) == false){
+        TX_Modifying = 1;
+        WritetoCB(U1TX_buffer, ch);
+        TX_Modifying = 0;
+    }
+    if (U1STAbits.TRMT && CB_isEmpty(U1TX_buffer) == false) {
+        IFS0bits.U1TXIF = 1;
+    }
     return 1;
 }
 
 unsigned char GetChar(void) {
-    if (CB_isEmpty(U1RX_buffer)) {
+    if (CB_isEmpty(U1RX_buffer) == true) {
         return 0;
     }
-//    IEC0bits.U1RXIE = 0;
-//    unsigned char data = ReadfromCB(U1RX_buffer);
-//    IEC0bits.U1RXIE = 1;
-//    return data; 
-    if(CB_isEmpty(U1RX_buffer) == false){
-        IEC0bits.U1RXIE = 0;
-        unsigned char data = ReadfromCB(U1RX_buffer);
-        IEC0bits.U1RXIE = 1;
+    if (RX_Collision == 1){
         IFS0bits.U1RXIF = 1;
+        RX_Collision == 0;
+    }
+    if(CB_isEmpty(U1RX_buffer) == false){
+        RX_Modifying = 1;
+        unsigned char data = ReadfromCB(U1RX_buffer);
+        RX_Modifying = 0;
         return data;
     }
 }
