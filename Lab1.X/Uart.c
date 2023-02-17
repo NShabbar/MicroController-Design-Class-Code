@@ -13,6 +13,8 @@
 #include <sys/attribs.h>
 #include "CircularBuffer.h"
 
+#define WAITING_RX 1
+#define WAITING_TX 2
 
 
 static CBuffer U1RX_buffer;
@@ -74,9 +76,9 @@ void _mon_putc(char c) {
     PutChar(c);
 }
 
-//unsigned char u1rx_isEmpty(void){
-//    return CB_isEmpty(&U1RX_buffer);
-//}
+unsigned char u1rx_isEmpty(void){
+    return CB_isEmpty(U1RX_buffer);
+}
 /****************************************************************************
  * Function: IntUart1Handler
  * Parameters: None.
@@ -106,43 +108,51 @@ void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
         IFS0bits.U1TXIF = 0;
         if(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
             unsigned char write_data = ReadfromCB(U1TX_buffer);
-            U1TXREG = write_data;
+            U1TXREG = write_data;   
         }
     }
 }
 
-int PutChar(unsigned char* ch) {
+int PutChar(char ch) {
     if (CB_isFull(U1TX_buffer) == true) {
         return false;
     }
-    if (!CB_isFull(U1TX_buffer)) {
-        IEC0bits.U1TXIE = 0;
-        WritetoCB(U1TX_buffer, ch);
-        IEC0bits.U1TXIE = 1;
-        //IFS0bits.U1TXIF = 1;
-    }
-    return 1;
-//    if (U1STAbits.TRMT && !CB_isEmpty(&U1TX_buffer)) {
+//    IEC0bits.U1TXIE = 0;
+    WritetoCB(U1TX_buffer, ch);
+//    IEC0bits.U1TXIE = 1;
+    IFS0bits.U1TXIF = 1;
+    
+//    if (U1STAbits.TRMT && !CB_isEmpty(U1TX_buffer)) {
 //        IFS0bits.U1TXIF = 1;
 //    }
+    return 1;
 }
 
-//unsigned char GetChar(void) {
-//    if (CB_isEmpty(U1RX_buffer)) {
-//        return 0;
-//    }
-//    unsigned char data = ReadfromCB(U1RX_buffer);
-//    return data;
-//}
-int GetChar(unsigned char* data) {
+unsigned char GetChar(void) {
     if (CB_isEmpty(U1RX_buffer)) {
         return 0;
     }
 //    IEC0bits.U1RXIE = 0;
-    *data = ReadfromCB(U1RX_buffer);
+//    unsigned char data = ReadfromCB(U1RX_buffer);
 //    IEC0bits.U1RXIE = 1;
-    return data;
+//    return data;
+    //IEC0bits.U1RXIE = 0;
+    if(CB_isEmpty(U1RX_buffer) == false){
+        unsigned char data = ReadfromCB(U1RX_buffer);
+//    IEC0bits.U1RXIE = 1;
+        IFS0bits.U1RXIF = 1;
+        return data;
+    }
 }
+//int GetChar(unsigned char* data) {
+//    if (CB_isEmpty(U1RX_buffer)) {
+//        return 0;
+//    }
+////    IEC0bits.U1RXIE = 0;
+//    *data = ReadfromCB(U1RX_buffer);
+////    IEC0bits.U1RXIE = 1;
+//    return data;
+//}
 
 #ifdef Part1
 
@@ -160,12 +170,13 @@ void main() {
 
 #ifdef Part2
 void main() {
-    Uart_Init(115200);
     BOARD_Init();
+    Uart_Init(115200);
     printf("Hello World\n");
-    unsigned char* data = U1RXREG;
+//    unsigned char* data = U1RXREG;
+    
     while(1){
-        GetChar(data);
+        unsigned char data = GetChar();
         if (data != 0){
             PutChar(data);
         }

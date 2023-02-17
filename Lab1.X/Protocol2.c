@@ -81,6 +81,7 @@ int Protocol_Init(unsigned long baudrate) {
         return 0;
     }
     state = STATE_HEAD;
+    flag = 0;
     return 1;
 }
 
@@ -94,32 +95,32 @@ int Protocol_Init(unsigned long baudrate) {
  *        PACKETBUFFERSIZE.
  * @author instructor W2023 */
 uint8_t Protocol_QueuePacket() {
-//    if (u1rx_isEmpty()){
-//        return false;
-//    }
+    if (u1rx_isEmpty()){
+        return false;
+    }
     if (RX_isFull(RX)) {
         return 1;
     }
     if (rxPacket == NULL) {
         rxPacket = newPacket();
     }
-    unsigned char *data = U1RXREG;
-    unsigned char c = GetChar(data);
+//    unsigned char *data = U1RXREG;
+//    unsigned char c = GetChar(data);
+    unsigned char c = GetChar();
     BuildRxPacket(rxPacket, c);
     if (flag == 1) {
         flag = 0;
-//        if (rxPacket -> ID == ID_LEDS_GET) {
-//            unsigned char payl = LEDS_GET();
-//            Protocol_SendPacket(2, ID_LEDS_STATE, &payl);
-//            freeRXPacket(&rxPacket);
-//        }
-//        if (rxPacket -> ID == ID_LEDS_SET) {
-//            LEDS_SET(rxPacket -> payLoad[0]);
-//            freeRXPacket(&rxPacket);
-//        }
         WritetoRX(RX, rxPacket);
         rxPacket = NULL;
     }
+//    if ( flag == 0){
+//        BuildRxPacket(rxPacket, GetChar());
+//        if (flag == 1) {
+//            flag = 0;
+//            WritetoRX(RX, rxPacket);
+//            rxPacket = NULL;
+//        }
+//    }
 }
 
 /**
@@ -163,19 +164,13 @@ int Protocol_SendDebugMessage(char *Message) {
 int Protocol_SendPacket(unsigned char len, unsigned char ID, unsigned char *Payload) {
     uint8_t checks = 0;
     PutChar(HEAD);
-//    unsigned char data = HEAD;
     PutChar(len);
     PutChar(ID);
     checks = Protocol_CalcIterativeChecksum(ID, checks);
-//    checks = Protocol_CalcIterativeChecksum(checks, ID);
-//    checks = Protocol_CalcIterativeChecksum(checks, *Payload);
-//    PutChar(*Payload);
     for (int i = 0; i < (len-1); i++) {
         PutChar(Payload[i]);
         checks = Protocol_CalcIterativeChecksum(Payload[i], checks);
-//        checks = Protocol_CalcIterativeChecksum(checks, Payload[i]);
     }
-//    int x = 0;
     PutChar(TAIL);
     PutChar(checks);
     PutChar('\r');
