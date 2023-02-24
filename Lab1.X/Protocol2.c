@@ -30,6 +30,19 @@ typedef struct rxpBuffObj {
     rxpADT *buffer;
 } *rxpBuffObj;
 
+typedef enum state_errors {
+    ERROR_NONE,
+    NULL_PACKET,
+    STATE_HEAD_NOT_HEAD,
+    STATE_LEN_NOT_LEN,
+    STATE_ID_NOT_ID,
+    STATE_PAYL_NOT_PAYL,
+    STATE_TAIL_NOT_TAIL,
+    STATE_CHECKSUM_NOT_CHECK,
+    STATE_END_R_NOT_R,
+    STATE_END_N_NOT_N
+} state_errors;
+
 typedef enum PacketState {
     STATE_HEAD,
     STATE_LEN,
@@ -41,11 +54,14 @@ typedef enum PacketState {
     STATE_END_N
 } PacketState;
 
+static state_errors state_e;
 static PacketState state;
 static rxpBuffObj RX;
 static rxpADT rxPacket;
 static int count;
 static int flag;
+static int RX_Buff_full;
+static int rx_count;
 /*******************************************************************************
  * PRIVATE FUNCTIONS
  * Generally these functions would not be exposed but due to the learning nature 
@@ -83,6 +99,8 @@ int Protocol_Init(unsigned long baudrate) {
         return 0;
     }
     state = STATE_HEAD;
+    state = ERROR_NONE;
+    rx_count = 0;
     flag = 0;
     return 1;
 }
@@ -108,6 +126,9 @@ uint8_t Protocol_QueuePacket() {
     }
     unsigned char c = GetChar();
     BuildRxPacket(rxPacket, c);
+    char msg[MAXPAYLOADLENGTH];
+    sprintf(msg, "%d\n", state_e);
+    Protocol_SendDebugMessage(msg);
     if (flag == 1) {
         flag = 0;
         WritetoRX(RX, rxPacket);
@@ -128,9 +149,9 @@ int Protocol_GetInPacket(uint8_t *type, uint8_t *len, unsigned char *msg) {
     rxpADT getpacket = ReadfromRX(RX);
     *type = GetID(getpacket);
     *len = GetLen(getpacket);
-    for (int i = 0; i < GetLen(getpacket) - 1; i++) {
-        msg[i] = getpacket -> payLoad[i];
-        
+    for (int i = 1; i < GetLen(getpacket); i++) {
+        msg[i-1] = getpacket -> payLoad[i-1];
+
     }
     freeRXPacket(&getpacket);
     return 1;
@@ -161,7 +182,7 @@ int Protocol_SendPacket(unsigned char len, unsigned char ID, unsigned char *Payl
     PutChar(len);
     PutChar(ID);
     checks = Protocol_CalcIterativeChecksum(ID, checks);
-    for (int i = 0; i < (len - 1); i++) {
+    for (int i = 0; i < (len-1); i++) {
         PutChar(Payload[i]);
         checks = Protocol_CalcIterativeChecksum(Payload[i], checks);
     }
@@ -202,6 +223,7 @@ void flushPacketBuffer() {
 
 unsigned int convertEndian(unsigned int* data) {
     unsigned int result;
+//    result = (((*data)&0x000000FF) >> 24) | (((*data)&0x0000FF00) << 8) | (((*data)&0x00FF0000) >> 8) | (((*data)&0xFF000000) << 24);
     result = (((*data)&0x000000FF) << 24) | (((*data)&0x0000FF00) << 8) | (((*data)&0x00FF0000) >> 8) | (((*data)&0xFF000000) >> 24);
     return result;
 }
@@ -210,27 +232,32 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
     uint8_t type_for_parsepacket;
     uint8_t length_for_parsepacket;
     unsigned char msg[MAXPAYLOADLENGTH];
-    if(RX_isEmpty(RX) == true){
+    if (RX_isEmpty(RX)) {
         return;
     }
     Protocol_GetInPacket(&type_for_parsepacket, &length_for_parsepacket, msg);
     if (type_for_parsepacket == ID_PING) {
-        int* number = malloc(sizeof (int));
-        unsigned char* bit_num = number;
-        for (int i = 0; i < (length_for_parsepacket - 1); i++) {
-            *bit_num = msg[i];
-            bit_num++;
-        }
-        *number = convertEndian(number);
-        *number = *number >> 1;
-        *number = convertEndian(number);
-        unsigned char byte0 = *number&0x000000FF;
-        unsigned char byte1 = (*number&0x0000FF00) >> 8;
-        unsigned char byte2 = (*number&0x00FF0000) >> 16;
-        unsigned char byte3 = (*number&0xFF000000) >> 24;
-        unsigned char message[] = {byte0, byte1, byte2, byte3};
-        Protocol_SendPacket(5, ID_PONG, &message[0]);
-        free(number);
+        int number = *((int*)msg);
+        number = convertEndian(&number);
+        number >>= 1;
+        number = convertEndian(&number);
+        Protocol_SendPacket(5, ID_PONG, &number);
+//        int* number = malloc(sizeof (int));
+//        unsigned char* bit_num = number;
+//        for (int i = 0; (i < ((length_for_parsepacket) - 1)); i++) {
+//            *bit_num = msg[i];
+//            bit_num++;
+//        }
+//        *number = convertEndian(number);
+//        *number = *number >> 1;
+//        *number = convertEndian(number);
+//        unsigned char byte0 = *number & 0x000000FF;
+//        unsigned char byte1 = (*number & 0x0000FF00) >> 8;
+//        unsigned char byte2 = (*number & 0x00FF0000) >> 16;
+//        unsigned char byte3 = (*number & 0xFF000000) >> 24;
+//        unsigned char message[] = {byte0, byte1, byte2, byte3};
+//        Protocol_SendPacket(5, ID_PONG, &message[0]);
+//        free(number);
     }
     if (type_for_parsepacket == ID_LEDS_GET) {
         unsigned char payl = LEDS_GET();
@@ -265,7 +292,9 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
  * containing a PACKETBUFFERSIZE number of these rxpT packet structures.
  ******************************************************************************/
 uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
-    char msg[MAXPAYLOADLENGTH];
+    if (rxPacket == NULL){
+        return state_e = NULL_PACKET;
+    }
     switch (state) {
         case STATE_HEAD:
             count = 0;
@@ -277,14 +306,16 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 state = STATE_LEN;
             } else {
                 state = STATE_HEAD; // fill in errors here.
+                state_e = STATE_HEAD_NOT_HEAD;
             }
             break;
         case STATE_LEN:
             if (byte <= MAXPAYLOADLENGTH) {
                 rxPacket -> len = byte;
                 state = STATE_ID;
-            }else {
+            } else {
                 state = STATE_HEAD;
+                state_e = STATE_LEN_NOT_LEN;
             }
             break;
         case STATE_ID:
@@ -293,24 +324,24 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 rxPacket -> checkSum = Protocol_CalcIterativeChecksum(byte, rxPacket -> checkSum);
                 state = STATE_PAYL;
                 count++;
-                if (rxPacket -> len == 1){
+                if (rxPacket -> len == 1) {
                     state = STATE_TAIL;
                 }
-            }else {
+            } else {
                 state = STATE_HEAD; // fill in errors here.
+                state_e = STATE_ID_NOT_ID;
             }
             break;
         case STATE_PAYL:;
-            if (byte == TAIL) {
-                state = STATE_HEAD; // call error here.
-                break;
-            }
+//            if (byte == TAIL) {
+//                state = STATE_HEAD; // call error here.
+//                state_e = STATE_PAYL_NOT_PAYL;
+//                break;
+//            }
             rxPacket -> checkSum = Protocol_CalcIterativeChecksum(byte, rxPacket -> checkSum);
-            rxPacket -> payLoad[count-1] = byte;
+            rxPacket -> payLoad[count - 1] = byte;
             count++;
-            sprintf(msg,"%x\n", byte);
-            Protocol_SendDebugMessage(msg);
-            if (count == ((rxPacket -> len))) {
+            if (count == (GetLen(rxPacket))) {
                 state = STATE_TAIL;
             }
             break;
@@ -319,6 +350,7 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 state = STATE_CHECKSUM;
             } else {
                 state = STATE_HEAD; // fill in errors here.
+                state_e = STATE_TAIL_NOT_TAIL;
             }
             break;
         case STATE_CHECKSUM:
@@ -326,6 +358,7 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 state = STATE_END_R;
             } else {
                 state = STATE_HEAD; // fill in errors here.
+                state_e = STATE_CHECKSUM_NOT_CHECK;
             }
             break;
         case STATE_END_R:
@@ -333,6 +366,7 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 state = STATE_END_N;
             } else {
                 state = STATE_HEAD; // fill in errors here.
+                state_e = STATE_END_R_NOT_R;
             }
             break;
         case STATE_END_N:
@@ -341,6 +375,7 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
                 flag = 1;
             } else {
                 state = STATE_HEAD; // fill in errors here.
+                state_e = STATE_END_N_NOT_N;
             }
             break;
     }
@@ -362,10 +397,11 @@ unsigned char Protocol_CalcIterativeChecksum(unsigned char charIn, unsigned char
     return curChecksum;
 }
 
-int GetID(rxpADT packet){
+int GetID(rxpADT packet) {
     return packet -> ID;
 }
-int GetLen(rxpADT packet){
+
+int GetLen(rxpADT packet) {
     return packet -> len;
 }
 // CBuffer_init()
@@ -420,23 +456,21 @@ void freeRXBuffer(rxpBuffObj *pRX) {
 // checks if the buffer is full.
 
 int RX_isFull(rxpBuffObj RX) {
-    return (RX -> tail + 1) % PACKETBUFFERSIZE == RX -> head;
+    return((RX -> tail + 1) % PACKETBUFFERSIZE == RX -> head);
 }
 
 // CB_isEmpty())
 // checks if the buffer is empty.
 
 int RX_isEmpty(rxpBuffObj RX) {
-    return RX -> head == RX -> tail;
+    return (RX -> head == RX -> tail);
 }
 
 // WritetoCB()
 // writes to the circular buffer.
 
 int WritetoRX(rxpBuffObj RX, rxpADT data) {
-    if (RX_isFull(RX)) {
-        return true;
-    } else {
+    if (!RX_isFull(RX)) {
         RX -> buffer[RX -> tail] = data;
         RX -> tail = (RX -> tail + 1) % PACKETBUFFERSIZE;
     }
@@ -446,9 +480,7 @@ int WritetoRX(rxpBuffObj RX, rxpADT data) {
 // writes to the circular buffer.
 
 rxpADT ReadfromRX(rxpBuffObj RX) {
-    if (RX_isEmpty(RX)) {
-        return 0;
-    } else {
+    if (!RX_isEmpty(RX)) {
         rxpADT data = RX -> buffer[RX -> head];
         RX -> head = (RX -> head + 1) % PACKETBUFFERSIZE;
         return data;
@@ -471,18 +503,16 @@ void main() {
 
     //Set led
     unsigned char buildpacket[] = {204, 2, 129, 255, 185, 191, 13, 10};
-    
+
     //Get led
     unsigned char buildpacket1[] = {204, 1, 131, 185, 131, 13, 10};
-    for (int i = 0; i <= 7; i++) {
-        //PutChar(buildpacket[i]);
-        BuildRxPacket(TestPacket, buildpacket1[i]);
-    }
-    WritetoRX(RX, TestPacket);
-    Protocol_ParsePacket();
-    // state machine test
+//    for (int i = 0; i <= 6; i++) {
+//        BuildRxPacket(TestPacket, buildpacket1[i]);
+//    }
+//    WritetoRX(RX, TestPacket);
+//    Protocol_ParsePacket();
+//    // state machine test
 //    for (int i = 0; i <= 7; i++) {
-//        //PutChar(buildpacket[i]);
 //        BuildRxPacket(TestPacket, buildpacket[i]);
 //    }
 //    WritetoRX(RX, TestPacket);

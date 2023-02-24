@@ -39,10 +39,11 @@ int Uart_Init(unsigned long baudRate) {
     U1STA = 0; // initialize Uart1 status and control register to 0.
     U1TXREG = 0; // intialize Uart1 transmit register to 0.
     U1RXREG = 0; // intialize Uart1 receive register to 0.
+    U1BRG = 0;
 
     //Calculate Baude Rate
     unsigned int Fpb = BOARD_GetPBClock(); // May need to round with math.h round functions.
-    U1BRG = (Fpb / (16 * baudRate)) - 1; // PBCLK = 40 MHz.
+    U1BRG = 21; //(Fpb / (16 * baudRate)) - 1; // PBCLK = 40 MHz.
     // To calculate U1BRG given Baud Rate = 115200, use function:
     // UxBRG = (Fpb/(16*Baud Rate)) - 1, where Fpb is the frequency of the PBCLK.
     // PBCLK is the board's clock from the reference manual.
@@ -52,6 +53,7 @@ int Uart_Init(unsigned long baudRate) {
 
     // Enable UART1
     U1MODEbits.ON = 1; // ON, turns the UART on.
+    U1MODEbits.UARTEN = 1;
 
     // Enable
     U1STAbits.URXEN = 1; // Enables the receiver bit.
@@ -64,8 +66,8 @@ int Uart_Init(unsigned long baudRate) {
     // Enable Interrupts
     IEC0bits.U1RXIE = 1; // Enable interrupt
     IEC0bits.U1TXIE = 1; // Enable interrupt
-    IFS0bits.U1TXIF = 0;
     IFS0bits.U1RXIF = 0;
+    IFS0bits.U1TXIF = 0;
 
     // Interrupt Priorities
     IPC6bits.U1IP = 4; // Prio
@@ -125,7 +127,7 @@ int PutChar(char ch) {
         return false;
     }
     if (TX_Collision == 1){
-        TX_Collision == 0;
+        TX_Collision = 0;
         IFS0bits.U1TXIF = 1;
     }
     if (CB_isFull(U1TX_buffer) == false){
@@ -145,7 +147,7 @@ unsigned char GetChar(void) {
     }
     if (RX_Collision == 1){
         IFS0bits.U1RXIF = 1;
-        RX_Collision == 0;
+        RX_Collision = 0;
     }
     if(CB_isEmpty(U1RX_buffer) == false){
         RX_Modifying = 1;
@@ -154,15 +156,20 @@ unsigned char GetChar(void) {
         return data;
     }
 }
-//int GetChar(unsigned char* data) {
-//    if (CB_isEmpty(U1RX_buffer)) {
+//unsigned char GetChar(void) {
+//    if (!U1STAbits.URXDA || CB_isEmpty(U1RX_buffer)) {
 //        return 0;
 //    }
-////    IEC0bits.U1RXIE = 0;
-//    *data = ReadfromCB(U1RX_buffer);
-////    IEC0bits.U1RXIE = 1;
+//    if (RX_Collision == 1){
+//        IFS0bits.U1RXIF = 1;
+//        RX_Collision = 0;
+//    }
+//    RX_Modifying = 1;
+//    unsigned char data = ReadfromCB(U1RX_buffer);
+//    RX_Modifying = 0;
 //    return data;
 //}
+
 
 #ifdef Part1
 
