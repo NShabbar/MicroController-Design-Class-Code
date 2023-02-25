@@ -237,27 +237,29 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
     }
     Protocol_GetInPacket(&type_for_parsepacket, &length_for_parsepacket, msg);
     if (type_for_parsepacket == ID_PING) {
-        int number = *((int*)msg);
-        number = convertEndian(&number);
-        number >>= 1;
-        number = convertEndian(&number);
-        Protocol_SendPacket(5, ID_PONG, &number);
-//        int* number = malloc(sizeof (int));
-//        unsigned char* bit_num = number;
-//        for (int i = 0; (i < ((length_for_parsepacket) - 1)); i++) {
-//            *bit_num = msg[i];
-//            bit_num++;
-//        }
+//        int number = *((int*)msg);
+//        number = convertEndian(&number);
+//        NOP();
+//        number >>= 1;
+//        NOP();
+//        number = convertEndian(&number);
+//        Protocol_SendPacket(5, ID_PONG, &number);
+        int* val = malloc(sizeof (int));
+        unsigned char* bit_num = val;
+        for (int i = 0; (i < ((length_for_parsepacket) - 1)); i++) {
+            *bit_num = msg[i];
+            bit_num++;
+        }
+        *val = convertEndian(val);
+        *val = *val / 2;
 //        *number = convertEndian(number);
-//        *number = *number >> 1;
-//        *number = convertEndian(number);
-//        unsigned char byte0 = *number & 0x000000FF;
-//        unsigned char byte1 = (*number & 0x0000FF00) >> 8;
-//        unsigned char byte2 = (*number & 0x00FF0000) >> 16;
-//        unsigned char byte3 = (*number & 0xFF000000) >> 24;
-//        unsigned char message[] = {byte0, byte1, byte2, byte3};
-//        Protocol_SendPacket(5, ID_PONG, &message[0]);
-//        free(number);
+        unsigned char byte0 = (*val & 0x000000FF);
+        unsigned char byte1 = (*val & 0x0000FF00) >> 8;
+        unsigned char byte2 = (*val & 0x00FF0000) >> 16;
+        unsigned char byte3 = (*val & 0xFF000000) >> 24;
+        unsigned char message[] = {byte0, byte1, byte2, byte3};
+        Protocol_SendPacket(5, ID_PONG, &message[0]);
+        free(val);
     }
     if (type_for_parsepacket == ID_LEDS_GET) {
         unsigned char payl = LEDS_GET();
@@ -333,11 +335,6 @@ uint8_t BuildRxPacket(rxpADT rxPacket, unsigned char byte) {
             }
             break;
         case STATE_PAYL:;
-//            if (byte == TAIL) {
-//                state = STATE_HEAD; // call error here.
-//                state_e = STATE_PAYL_NOT_PAYL;
-//                break;
-//            }
             rxPacket -> checkSum = Protocol_CalcIterativeChecksum(byte, rxPacket -> checkSum);
             rxPacket -> payLoad[count - 1] = byte;
             count++;
@@ -506,6 +503,10 @@ void main() {
 
     //Get led
     unsigned char buildpacket1[] = {204, 1, 131, 185, 131, 13, 10};
+    
+    //Failed Ping
+//    unsigned char buildpacket2[] = {204, 5, 132, 221, 147, 68, 251, 185, 165, 13, 10};
+    unsigned char buildpacket3[] = {204, 5, 132, 244, 124, 50, 163, 185, 161, 13, 10};
 //    for (int i = 0; i <= 6; i++) {
 //        BuildRxPacket(TestPacket, buildpacket1[i]);
 //    }
@@ -517,6 +518,16 @@ void main() {
 //    }
 //    WritetoRX(RX, TestPacket);
 //    Protocol_ParsePacket();
+//    for (int i = 0; i <= 10; i++) {
+//        BuildRxPacket(TestPacket, buildpacket2[i]);
+//    }
+//    WritetoRX(RX, TestPacket);
+//    Protocol_ParsePacket();
+    for (int i = 0; i <= 10; i++) {
+        BuildRxPacket(TestPacket, buildpacket3[i]);
+    }
+    WritetoRX(RX, TestPacket);
+    Protocol_ParsePacket();
     //    unsigned char length = 0x02;
     //    unsigned char ids = 0x81;
     //    unsigned char lights = 0xFF;
@@ -526,9 +537,9 @@ void main() {
     //    unsigned char ids1 = 0x82;
     //    unsigned char lights1 = LEDS_GET();
     //    Protocol_SendPacket(length1, ids1, &lights1);
-    while (1) {
-        Protocol_QueuePacket();
-        Protocol_ParsePacket();
-    }
+//    while (1) {
+//        Protocol_QueuePacket();
+//        Protocol_ParsePacket();
+//    }
 }
 #endif

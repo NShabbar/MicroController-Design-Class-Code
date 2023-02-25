@@ -13,8 +13,6 @@
 #include <sys/attribs.h>
 #include "CircularBuffer.h"
 
-#define WAITING_RX 1
-#define WAITING_TX 2
 
 static int RX_Modifying;
 static int RX_Collision;
@@ -53,7 +51,6 @@ int Uart_Init(unsigned long baudRate) {
 
     // Enable UART1
     U1MODEbits.ON = 1; // ON, turns the UART on.
-    U1MODEbits.UARTEN = 1;
 
     // Enable
     U1STAbits.URXEN = 1; // Enables the receiver bit.
@@ -101,17 +98,23 @@ unsigned char u1rx_isEmpty(void){
 void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
     if (IFS0bits.U1RXIF && !RX_Modifying) {
         IFS0bits.U1RXIF = 0;
-        unsigned char read_data = U1RXREG;
-        WritetoCB(U1RX_buffer, read_data);
+        while(U1STAbits.URXDA == 1){
+            unsigned char read_data = U1RXREG;
+            WritetoCB(U1RX_buffer, read_data);
+        }
+        if (U1STAbits.OERR == 1) {
+            U1STAbits.OERR = 0;
+        }
     }
     if (IFS0bits.U1RXIF && RX_Modifying){
         RX_Collision = 1;
         IFS0bits.U1RXIF = 0; 
+        return;
     }
     
     if (IFS0bits.U1TXIF && !TX_Modifying) {
         IFS0bits.U1TXIF = 0;
-        if(!U1STAbits.UTXBF && !CB_isEmpty(U1TX_buffer)){
+        if(!U1STAbits.UTXBF && CB_isEmpty(U1TX_buffer)== false){
             unsigned char write_data = ReadfromCB(U1TX_buffer);
             U1TXREG = write_data;   
         }
@@ -119,6 +122,7 @@ void __ISR(_UART1_VECTOR) IntUart1Handler(void) {
     if (IFS0bits.U1TXIF && TX_Modifying){
         TX_Collision = 1;
         IFS0bits.U1TXIF = 0; 
+        return;
     }
 }
 
@@ -127,7 +131,7 @@ int PutChar(char ch) {
         return false;
     }
     if (TX_Collision == 1){
-        TX_Collision = 0;
+        TX_Collision == 0;
         IFS0bits.U1TXIF = 1;
     }
     if (CB_isFull(U1TX_buffer) == false){
@@ -147,7 +151,7 @@ unsigned char GetChar(void) {
     }
     if (RX_Collision == 1){
         IFS0bits.U1RXIF = 1;
-        RX_Collision = 0;
+        RX_Collision == 0;
     }
     if(CB_isEmpty(U1RX_buffer) == false){
         RX_Modifying = 1;
@@ -156,20 +160,15 @@ unsigned char GetChar(void) {
         return data;
     }
 }
-//unsigned char GetChar(void) {
-//    if (!U1STAbits.URXDA || CB_isEmpty(U1RX_buffer)) {
+//int GetChar(unsigned char* data) {
+//    if (CB_isEmpty(U1RX_buffer)) {
 //        return 0;
 //    }
-//    if (RX_Collision == 1){
-//        IFS0bits.U1RXIF = 1;
-//        RX_Collision = 0;
-//    }
-//    RX_Modifying = 1;
-//    unsigned char data = ReadfromCB(U1RX_buffer);
-//    RX_Modifying = 0;
+////    IEC0bits.U1RXIE = 0;
+//    *data = ReadfromCB(U1RX_buffer);
+////    IEC0bits.U1RXIE = 1;
 //    return data;
 //}
-
 
 #ifdef Part1
 

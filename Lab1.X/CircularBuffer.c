@@ -66,34 +66,23 @@ void freeCBuffer(CBuffer *pCB) {
 // checks if the buffer is full.
 
 int CB_isFull(CBuffer CB) {
-    if((CB -> tail + 1) % BUFFER_SIZE == CB -> head){
-        return true;
-    }
-    return false;
-//    return (CB -> tail + 1) % BUFFER_SIZE == CB -> head;
+    return (CB -> tail + 1) % BUFFER_SIZE == CB -> head;
 }
 
 // CB_isEmpty())
 // checks if the buffer is empty.
 
 int CB_isEmpty(CBuffer CB) {
-    if(CB -> head == CB -> tail){
-        return true;
-    }
-    return false;
-//    return CB -> head == CB -> tail;
+    return CB -> head == CB -> tail;
 }
 
 // WritetoCB()
 // writes to the circular buffer.
 
 int WritetoCB(CBuffer CB, unsigned char data) {
-    if (CB_isFull(CB) == true) {
-        return false;
-    } else {
+    if (!CB_isFull(CB)) {
         CB -> buffer[CB -> tail] = data;
         CB -> tail = (CB -> tail + 1) % BUFFER_SIZE;
-        return true;
     }
 }
 
@@ -101,9 +90,7 @@ int WritetoCB(CBuffer CB, unsigned char data) {
 // writes to the circular buffer.
 
 unsigned char ReadfromCB(CBuffer CB) {
-    if (CB_isEmpty(CB) == true) {
-        return false;
-    } else {
+    if (!CB_isEmpty(CB)) {
         char data = CB -> buffer[CB -> head];
         CB -> head = (CB -> head + 1) % BUFFER_SIZE;
         return data;
