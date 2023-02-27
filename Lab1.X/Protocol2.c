@@ -223,7 +223,6 @@ void flushPacketBuffer() {
 
 unsigned int convertEndian(unsigned int* data) {
     unsigned int result;
-//    result = (((*data)&0x000000FF) >> 24) | (((*data)&0x0000FF00) << 8) | (((*data)&0x00FF0000) >> 8) | (((*data)&0xFF000000) << 24);
     result = (((*data)&0x000000FF) << 24) | (((*data)&0x0000FF00) << 8) | (((*data)&0x00FF0000) >> 8) | (((*data)&0xFF000000) >> 24);
     return result;
 }
@@ -237,13 +236,6 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
     }
     Protocol_GetInPacket(&type_for_parsepacket, &length_for_parsepacket, msg);
     if (type_for_parsepacket == ID_PING) {
-//        int number = *((int*)msg);
-//        number = convertEndian(&number);
-//        NOP();
-//        number >>= 1;
-//        NOP();
-//        number = convertEndian(&number);
-//        Protocol_SendPacket(5, ID_PONG, &number);
         unsigned char c0 = msg[0];
         unsigned char c1 = msg[1];
         unsigned char c2 = msg[2];
@@ -269,24 +261,6 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
         message[2] = c2;
         message[3] = c3;
         Protocol_SendPacket(5, ID_PONG, message);
-//        unsigned int val = (unsigned int)msg[1]
-//        int* val = malloc(sizeof (int));
-//        unsigned char* bit_num = val;
-//        for (int i = 0; (i < ((length_for_parsepacket) - 1)); i++) {
-//            *bit_num = msg[i];
-//            bit_num++;
-//        }
-//        
-//        *val = convertEndian(val);
-//        *val = *val >> 1;
-//        *val = convertEndian(val);
-//        unsigned char byte0 = (*val & 0x000000FF);
-//        unsigned char byte1 = (*val & 0x0000FF00) >> 8;
-//        unsigned char byte2 = (*val & 0x00FF0000) >> 16;
-//        unsigned char byte3 = (*val & 0xFF000000) >> 24;
-//        unsigned char message[] = {byte0, byte1, byte2, byte3};
-//        Protocol_SendPacket(5, ID_PONG, &message[0]);
-//        free(val);
     }
     if (type_for_parsepacket == ID_LEDS_GET) {
         unsigned char payl = LEDS_GET();
