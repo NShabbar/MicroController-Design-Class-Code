@@ -244,22 +244,49 @@ void Protocol_ParsePacket() { // deals with ping and pong. and removes packets f
 //        NOP();
 //        number = convertEndian(&number);
 //        Protocol_SendPacket(5, ID_PONG, &number);
-        int* val = malloc(sizeof (int));
-        unsigned char* bit_num = val;
-        for (int i = 0; (i < ((length_for_parsepacket) - 1)); i++) {
-            *bit_num = msg[i];
-            bit_num++;
-        }
-        *val = convertEndian(val);
-        *val = *val / 2;
-//        *number = convertEndian(number);
-        unsigned char byte0 = (*val & 0x000000FF);
-        unsigned char byte1 = (*val & 0x0000FF00) >> 8;
-        unsigned char byte2 = (*val & 0x00FF0000) >> 16;
-        unsigned char byte3 = (*val & 0xFF000000) >> 24;
-        unsigned char message[] = {byte0, byte1, byte2, byte3};
-        Protocol_SendPacket(5, ID_PONG, &message[0]);
-        free(val);
+        unsigned char c0 = msg[0];
+        unsigned char c1 = msg[1];
+        unsigned char c2 = msg[2];
+        unsigned char c3 = msg[3];
+        
+        unsigned int num1 = c0 << 24;
+        unsigned int num2 = c1 << 16;
+        unsigned int num3 = c2 << 8;
+        unsigned int num4 = c3;
+        
+        unsigned int val = num1 | num2 | num3 | num4;
+        
+        val = val >> 1;
+        
+        c0 = (val&0xFF000000) >> 24;
+        c1 = (val&0x00FF0000) >> 16;
+        c2 = (val&0x0000FF00) >> 8;
+        c3 = (val&0x000000FF);
+        
+        unsigned char message[MAXPAYLOADLENGTH];
+        message[0] = c0;
+        message[1] = c1;
+        message[2] = c2;
+        message[3] = c3;
+        Protocol_SendPacket(5, ID_PONG, message);
+//        unsigned int val = (unsigned int)msg[1]
+//        int* val = malloc(sizeof (int));
+//        unsigned char* bit_num = val;
+//        for (int i = 0; (i < ((length_for_parsepacket) - 1)); i++) {
+//            *bit_num = msg[i];
+//            bit_num++;
+//        }
+//        
+//        *val = convertEndian(val);
+//        *val = *val >> 1;
+//        *val = convertEndian(val);
+//        unsigned char byte0 = (*val & 0x000000FF);
+//        unsigned char byte1 = (*val & 0x0000FF00) >> 8;
+//        unsigned char byte2 = (*val & 0x00FF0000) >> 16;
+//        unsigned char byte3 = (*val & 0xFF000000) >> 24;
+//        unsigned char message[] = {byte0, byte1, byte2, byte3};
+//        Protocol_SendPacket(5, ID_PONG, &message[0]);
+//        free(val);
     }
     if (type_for_parsepacket == ID_LEDS_GET) {
         unsigned char payl = LEDS_GET();
@@ -523,11 +550,11 @@ void main() {
 //    }
 //    WritetoRX(RX, TestPacket);
 //    Protocol_ParsePacket();
-    for (int i = 0; i <= 10; i++) {
-        BuildRxPacket(TestPacket, buildpacket3[i]);
-    }
-    WritetoRX(RX, TestPacket);
-    Protocol_ParsePacket();
+//    for (int i = 0; i <= 10; i++) {
+//        BuildRxPacket(TestPacket, buildpacket3[i]);
+//    }
+//    WritetoRX(RX, TestPacket);
+//    Protocol_ParsePacket();
     //    unsigned char length = 0x02;
     //    unsigned char ids = 0x81;
     //    unsigned char lights = 0xFF;
@@ -537,9 +564,9 @@ void main() {
     //    unsigned char ids1 = 0x82;
     //    unsigned char lights1 = LEDS_GET();
     //    Protocol_SendPacket(length1, ids1, &lights1);
-//    while (1) {
-//        Protocol_QueuePacket();
-//        Protocol_ParsePacket();
-//    }
+    while (1) {
+        Protocol_QueuePacket();
+        Protocol_ParsePacket();
+    }
 }
 #endif
