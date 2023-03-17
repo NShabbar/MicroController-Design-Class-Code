@@ -4,6 +4,8 @@
 #include<assert.h>
 #include <sys/attribs.h>
 #include <string.h>
+#include <stdio.h>
+#include <time.h>
 #include "Protocol2.h"
 
 static unsigned int milliseconds;
@@ -60,9 +62,16 @@ int main(){
     Protocol_Init(111520);
     TRISE = 0;
     LATE = 0;
+    
+    unsigned char msg[MAXPAYLOADLENGTH];
+    sprintf(msg, "Nadia's FreeRunningTimer.c compiled on: %s %s\n", __DATE__, __TIME__);
+    Protocol_SendDebugMessage(msg);
     while(1){
         if ((milliseconds % 2000) == 0){
-            LATE ^= 0x01;
+            LATE ^= 0xFF;
+            unsigned char mmsg[MAXPAYLOADLENGTH];
+            sprintf(mmsg, "Milliseconds: %d and microseconds: %d\n", milliseconds, FreeRunningTimer_GetMicroSeconds());
+            Protocol_SendDebugMessage(mmsg);
         }
     }
 }

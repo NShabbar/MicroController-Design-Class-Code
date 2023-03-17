@@ -126,8 +126,6 @@ uint8_t Protocol_QueuePacket() {
     unsigned char c = GetChar();
     BuildRxPacket(rxPacket, c);
     char msg[MAXPAYLOADLENGTH];
-    sprintf(msg, "%d\n", state_e);
-    Protocol_SendDebugMessage(msg);
     if (flag == 1) {
         flag = 0;
         WritetoRX(RX, rxPacket);
