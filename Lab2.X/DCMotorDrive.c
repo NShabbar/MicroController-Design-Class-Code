@@ -15,23 +15,20 @@
  * @brief initializes timer3 to 2Khz and set up the pins
  * @warning you will need 3 pins to correctly drive the motor  */
 int DCMotorDrive_Init(void){
-    // the 32-bit as the clock source for the compare time base.
-    T3CON = 0x0018; // Configure Timer2 for 32-bit operation
-    // with a prescaler of 2. The Timer2/Timer3
-    // pair is accessed via registers associated
-    // with the Timer2 register
-    OC3CON = 0x0000; // Turn off OC1 while doing setup.
-    OC3CON = 0x0023; // Configure for compare toggle mode
-    OC3R = 0x00500000; // Initialize Compare Register 1
-    PR3 = 0x00500000; // Set period (PR2 is now 32-bits wide)
-    // configure int
-    IFS0CLR = 0x00000040; // Clear the OC1 interrupt flag
-    IFS0SET = 0x00000040; // Enable OC1 interrupt
+    T3CON = 305; // Configure Timer2 for a prescaler of 2
+    OC3CON = 0x0000; // Turn off OC1 while doing setup. 
+    OC3CON = 0x0003; // Configure for compare toggle mode
+    OC3R = 0x0500; // Initialize Compare Register 1
+    PR3 = 65572; // Set period
+    TMR3 = 0; // counter register
+     // Configure int 
+    IFS0CLR = 0x0040; // Clear the OC1 interrupt flag 
+    IEC0SET = 0x040; // Enable OC1 interrupt 
     IPC3SET = 0x001C0000; // Set OC1 interrupt priority to 7,
-    // the highest level
-    IPC3SET = 0x00030000; // Set Subpriority to 3, maximum
-    T3CONSET = 0x8000; // Enable Timer2
-    OC3CONSET = 0x8000; // Enable OC1
+     // the highest level
+    IPC3SET = 3; // Set Subpriority to 3, maximum
+    T3CONSET = 0x8000; // Enable Timer3
+    OC3CONSET = 0x8000; // Enable OC2
 }
 
 
@@ -40,7 +37,9 @@ int DCMotorDrive_Init(void){
  * @param newMotorSpeed, in units of Duty Cycle (+/- 1000)
  * @return SUCCESS or ERROR
  * @brief Sets the new duty cycle for the motor, 0%->0, 100%->1000 */
-int DCMotorDrive_SetMotorSpeed(int newMotorSpeed);
+int DCMotorDrive_SetMotorSpeed(int newMotorSpeed){
+    int DC = 0.3111 * newMotorSpeed + 19;
+}
 
 
 /**
